@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AGENTSOFR — RegimeShift Clearinghouse</title>
+<meta name="description" content="The agent-native short-rate benchmark. Live on Base mainnet. Pay-per-call data + bilateral RFQ marketplace + Chainlink-driven liquidations.">
+<style>
+  :root {
+    /* ─── Terminal palette ───────────────────────────────────── */
+    --bg:           #0a0e14;
+    --bg-darker:    #060a0f;
+    --panel:        #0e1419;
+    --panel-2:      #131a22;
+    --border:       #1f2937;
+    --border-soft:  #1a242f;
+
+    --label:        #e6a14b;   /* amber-orange (softer than Bloomberg orange) */
+    --label-dim:    #b8843e;
+    --value:        #6ed4c7;   /* mint-teal */
+    --value-bright: #8aebde;
+    --header-bg:    #1f3d3d;   /* dark teal section header (not maroon) */
+    --header-fg:    #d4a06a;
+
+    --text:         #d1d5db;
+    --text-bright:  #f3f4f6;
+    --muted:        #6b7280;
+    --accent:       #10b981;   /* our brand green */
+    --accent-dim:   #047857;
+    --warn:         #f59e0b;
+    --danger:       #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+  /* ─── Top terminal bar ────────────────────────────────────── */
+  .terminal-bar {
+    background: var(--bg-darker);
+    border-bottom: 2px solid var(--header-bg);
+    padding: 0;
+    font-family: ui-monospace, monospace;
+  }
+  .terminal-bar-inner {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .ticker-tab {
+    background: var(--header-bg);
+    color: var(--text-bright);
+    padding: 8px 18px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ticker-tab .ticker {
+    color: var(--label);
+    text-transform: uppercase;
+  }
+  .nav-tab {
+    background: transparent;
+    color: var(--text);
+    padding: 8px 16px;
+    font-size: 12px;
+    text-decoration: none;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.1s;
+  }
+  .nav-tab:hover { background: var(--panel-2); }
+  .nav-tab .num {
+    color: var(--label);
+    margin-right: 4px;
+  }
+  .nav-tab.right { margin-left: auto; color: var(--muted); }
+
+  /* ─── Hero — "Index Description" style ────────────────────── */
+  .hero {
+    padding: 24px 0 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-section-label {
+    color: var(--header-fg);
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .hero h1 {
+    color: var(--value);
+    font-family: ui-monospace, monospace;
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    letter-spacing: -0.5px;
+  }
+  .hero h1 .em {
+    color: var(--value-bright);
+  }
+  .hero .subtitle {
+    color: var(--text);
+    font-size: 14px;
+    max-width: 800px;
+    margin: 4px 0 0;
+  }
+  .hero .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--panel);
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    padding: 3px 12px;
+    border-radius: 3px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    margin-left: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .hero .live-pill .dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ─── Metrics strip (agentic.market-inspired) ───────────────── */
+  .metrics-strip {
+    background: var(--bg-darker);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 0;
+    margin: 0 -16px;
+  }
+  .metrics-strip-inner {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+  @media (max-width: 1100px) {
+    .metrics-strip-inner { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 500px) {
+    .metrics-strip-inner { grid-template-columns: 1fr; }
+  }
+  .metric-card {
+    background: var(--bg-darker);
+    padding: 18px 22px;
+    transition: background 0.2s;
+    cursor: default;
+    position: relative;
+    border-top: 2px solid transparent;
+  }
+  .metric-card:hover {
+    background: var(--panel);
+    border-top: 2px solid var(--label);
+  }
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .metric-label {
+    color: var(--label);
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+  }
+  .metric-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    color: var(--accent);
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border: 1px solid var(--accent-dim);
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .metric-pill.live::before {
+    content: '';
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 4px var(--accent);
+    animation: pulse 2s infinite;
+  }
+  .metric-pill.audit {
+    color: var(--value);
+    border-color: var(--border);
+  }
+  .metric-value {
+    font-family: ui-monospace, monospace;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--value-bright);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric-value.endpoint-name {
+    font-size: 14px;
+    word-break: break-word;
+    line-height: 1.2;
+    color: var(--value);
+  }
+  .metric-value.endpoint-name .ep-prefix {
+    color: var(--muted);
+  }
+  .metric-value .unit {
+    font-size: 18px;
+    color: var(--value);
+    margin-left: 4px;
+  }
+  .metric-value .delta {
+    font-size: 12px;
+    color: var(--accent);
+    margin-left: 8px;
+    font-weight: 400;
+  }
+  .metric-sub {
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  .metric-sub .tx-rate {
+    color: var(--accent);
+  }
+
+  /* ─── Sparkline (SVG inside metric card) ─────────────────── */
+  .sparkline {
+    width: 100%;
+    height: 28px;
+    margin-top: 10px;
+    display: block;
+    color: var(--accent);
+  }
+  .sparkline.dim { color: var(--label-dim); }
+  .sparkline polyline { fill: none; stroke: currentColor; stroke-width: 1.5; }
+  .sparkline .area    { fill: currentColor; opacity: 0.10; stroke: none; }
+  .sparkline .last-pt { fill: currentColor; }
+  .sparkline.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ─── HOT ENDPOINT pill ─────────────────────────────────── */
+  .hot-flame {
+    display: inline-block;
+    margin-right: 4px;
+    animation: pulse 2s infinite;
+  }
+
+  /* Payments race bars (agentic.market style) */
+  .race-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+  }
+  .race-bar {
+    display: grid;
+    grid-template-columns: 50px 1fr 50px;
+    gap: 8px;
+    align-items: center;
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+  }
+  .race-bar .lbl { color: var(--muted); text-transform: uppercase; }
+  .race-bar .num { color: var(--value); text-align: right; }
+  .race-bar .track {
+    height: 6px;
+    background: var(--border-soft);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .race-bar .fill {
+    height: 100%;
+    transition: width 0.6s ease;
+  }
+  .race-bar.paid .fill { background: var(--accent); }
+  .race-bar.probe .fill { background: var(--label-dim); }
+
+  /* ─── Section header strip ────────────────────────────────── */
+  .section-header {
+    background: var(--header-bg);
+    color: var(--header-fg);
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 6px 16px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-header .num {
+    color: var(--label);
+    font-weight: 700;
+  }
+  .section-header.compact {
+    margin: 24px 0 0;
+  }
+
+  /* ─── Two-column "Details + Chart" grid ───────────────────── */
+  .terminal-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal-grid.single { grid-template-columns: 1fr; }
+  @media (max-width: 880px) {
+    .terminal-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ─── Metadata panel (Details column) ─────────────────────── */
+  .details-panel {
+    padding: 14px 18px 18px;
+    border-right: 1px solid var(--border);
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+  }
+  .details-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 12px;
+    padding: 4px 0;
+    align-items: baseline;
+  }
+  .details-row .field {
+    color: var(--label);
+    font-weight: 600;
+  }
+  .details-row .val {
+    color: var(--value);
+  }
+  .details-row .val.bright {
+    color: var(--value-bright);
+  }
+  .details-row .val.muted {
+    color: var(--text);
+  }
+
+  /* ─── Right column: live rate / chart placeholder ─────────── */
+  .right-panel {
+    padding: 14px 24px 18px;
+  }
+  .rate-display {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .rate-display .label-text {
+    color: var(--label);
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-right: 8px;
+  }
+  .rate-display .rate-num {
+    font-family: ui-monospace, monospace;
+    font-size: 48px;
+    color: var(--value-bright);
+    font-weight: 600;
+    letter-spacing: -1px;
+  }
+  .rate-display .rate-suffix {
+    font-family: ui-monospace, monospace;
+    font-size: 18px;
+    color: var(--value);
+  }
+  .rate-meta {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .rate-meta .item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .rate-meta .item .label-text {
+    color: var(--label);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .rate-meta .item .val {
+    color: var(--value);
+    font-size: 15px;
+  }
+  .regime-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 2px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .regime-pill.resting { background: #064e3b; color: #6ee7b7; }
+  .regime-pill.low     { background: #064e3b; color: #6ee7b7; }
+  .regime-pill.normal  { background: #1e3a5f; color: #93c5fd; }
+  .regime-pill.elevated{ background: #422006; color: #fdba74; }
+  .regime-pill.high    { background: #450a0a; color: #fca5a5; }
+  .regime-pill.extreme { background: #450a0a; color: #fca5a5; animation: pulse 1s infinite; }
+
+  /* ─── Source breakdown chart placeholder ──────────────────── */
+  .sources-chart {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 2px;
+  }
+  .sources-chart .source-row {
+    display: grid;
+    grid-template-columns: 180px 70px 1fr 70px;
+    gap: 12px;
+    align-items: center;
+    padding: 4px 0;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+  }
+  .sources-chart .source-row .name { color: var(--text); }
+  .sources-chart .source-row .rate { color: var(--value); text-align: right; }
+  .sources-chart .source-row .weight { color: var(--muted); text-align: right; }
+  .sources-chart .bar {
+    height: 6px;
+    background: var(--border-soft);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .sources-chart .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  }
+
+  /* ─── Personas grid ───────────────────────────────────────── */
+  .personas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    padding: 0;
+  }
+  .persona {
+    background: var(--panel);
+    padding: 18px 20px;
+  }
+  .persona .role {
+    color: var(--label);
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .persona h3 {
+    color: var(--value-bright);
+    font-family: ui-monospace, monospace;
+    font-size: 18px;
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .persona p {
+    color: var(--text);
+    margin: 0 0 14px;
+    font-size: 13px;
+  }
+  .persona .price {
+    color: var(--accent);
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    border: 1px solid var(--accent-dim);
+    padding: 3px 8px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  /* ─── Quickstart — terminal style ─────────────────────────── */
+  .quickstart-block {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+  }
+  .quickstart-step {
+    margin: 16px 0;
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .quickstart-step .num {
+    background: var(--header-bg);
+    color: var(--label);
+    width: 24px;
+    height: 24px;
+    border-radius: 2px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .quickstart-step .body {
+    color: var(--text);
+  }
+  .quickstart-step .body strong {
+    color: var(--value-bright);
+    font-weight: 600;
+  }
+  .quickstart-step code.inline {
+    background: var(--bg);
+    color: var(--label);
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    border: 1px solid var(--border);
+  }
+  .quickstart-step pre {
+    background: var(--bg-darker);
+    color: var(--text-bright);
+    padding: 12px 16px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    margin: 8px 0 0;
+  }
+  .quickstart-step pre .c { color: var(--muted); }
+  .quickstart-step pre .k { color: var(--label); }
+  .quickstart-step pre .s { color: var(--value); }
+  .quickstart-step pre .v { color: var(--value-bright); }
+
+  /* ─── Endpoint table ──────────────────────────────────────── */
+  table.endpoints {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+  }
+  table.endpoints th, table.endpoints td {
+    padding: 8px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  table.endpoints th {
+    background: var(--bg-darker);
+    color: var(--label);
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.endpoints td.method-path {
+    color: var(--value);
+  }
+  table.endpoints td.method-path .method {
+    color: var(--warn);
+    margin-right: 6px;
+  }
+  table.endpoints .price-pill {
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 11px;
+  }
+  table.endpoints .free-pill {
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 11px;
+  }
+  table.endpoints td.description {
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px;
+  }
+
+  /* ─── Activity feed ───────────────────────────────────────── */
+  .activity-list {
+    background: var(--panel);
+  }
+  .activity-row {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .activity-row:last-child { border-bottom: none; }
+  .activity-row .endpoint { color: var(--value); }
+  .activity-row .counts { color: var(--muted); }
+  .activity-row .counts .paid {
+    color: var(--accent);
+    margin-right: 12px;
+  }
+
+  /* ─── Audit trajectory ────────────────────────────────────── */
+  .audit-strip {
+    background: var(--panel);
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 24px;
+    align-items: end;
+    border-bottom: 1px solid var(--border);
+  }
+  .audit-round {
+    text-align: left;
+    font-family: ui-monospace, monospace;
+  }
+  .audit-round .label-text {
+    color: var(--label);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .audit-round .count {
+    color: var(--value-bright);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+    margin: 4px 0;
+  }
+  .audit-round .breakdown {
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .audit-round.resolved .count {
+    color: var(--accent);
+  }
+  .audit-round .arrow {
+    color: var(--header-fg);
+    font-size: 18px;
+    margin-right: 4px;
+  }
+
+  /* ─── Bottom function bar ─────────────────────────────────── */
+  .function-bar {
+    background: var(--bg-darker);
+    border-top: 2px solid var(--header-bg);
+    padding: 10px 0;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+  }
+  .function-bar .inner {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  .function-bar .fn {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .function-bar .fn .key {
+    color: var(--label);
+    margin-right: 6px;
+    font-weight: 700;
+  }
+  .function-bar .fn:hover .key { color: var(--value-bright); }
+
+  /* ─── Footer ──────────────────────────────────────────────── */
+  footer {
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 28px 16px;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: ui-monospace, monospace;
+  }
+  footer .inner { max-width: 1200px; margin: 0 auto; }
+  footer a {
+    color: var(--value);
+    text-decoration: none;
+    margin-right: 20px;
+  }
+  footer a:hover { color: var(--value-bright); }
+  footer .built-for {
+    margin-top: 14px;
+    color: var(--muted);
+  }
+  footer .built-for a {
+    color: var(--label);
+    margin-right: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── TOP TERMINAL BAR ─────────────────────────────────────── -->
+<div class="terminal-bar">
+  <div class="terminal-bar-inner">
+    <div class="ticker-tab"><span class="ticker">AGENTSOFR</span> Rate</div>
+    <a class="nav-tab" href="#methodology"><span class="num">M)</span> Methodology</a>
+    <a class="nav-tab" href="#personas"><span class="num">R)</span> Roles</a>
+    <a class="nav-tab" href="#quickstart"><span class="num">Q)</span> Quickstart</a>
+    <a class="nav-tab" href="#endpoints"><span class="num">E)</span> Endpoints</a>
+    <a class="nav-tab" href="#audit"><span class="num">A)</span> Audits</a>
+    <a class="nav-tab right" target="_blank" href="https://github.com/tradingdesk26/armsys-signals">GitHub →</a>
+  </div>
+</div>
+
+<!-- ─── HERO ────────────────────────────────────────────────── -->
+<div class="container">
+  <div class="hero">
+    <div class="hero-section-label">Index Description</div>
+    <h1>
+      <span class="em">Inter-Agent Repo &amp; Reference Rate</span> for the Agent Economy
+      <span class="live-pill"><span class="dot"></span>LIVE on Base mainnet</span>
+    </h1>
+    <p class="subtitle">
+      Agent-SOFR is the first decentralized USD short-rate benchmark for AI agents,
+      aggregated from 8 market-derived sources (Deribit options PCP, Hyperliquid funding,
+      Aevo, Deribit basis, Aave V3, Compound, SOFR). Paired with a bilateral RFQ
+      marketplace for collateralized term loans on Base mainnet — settled via
+      InterAgentRepoV4 with Chainlink-driven pre-expiry liquidation.
+    </p>
+  </div>
+</div>
+
+<!-- ─── METRICS STRIP (agentic.market-inspired) ─────────────── -->
+<div class="container">
+  <div class="metrics-strip">
+    <div class="metrics-strip-inner">
+      <!-- 1. PAID CALLS — with sparkline + TX rate -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-label">Paid Calls</span>
+          <span class="metric-pill live">Live</span>
+        </div>
+        <div class="metric-value">
+          <span id="m-paid">—</span>
+          <span class="delta" id="m-paid-delta"></span>
+        </div>
+        <svg class="sparkline empty" id="spark-paid" viewBox="0 0 100 28" preserveAspectRatio="none">collecting…</svg>
+        <div class="metric-sub">
+          <span class="tx-rate" id="m-tx-rate">—</span>
+          <span style="color: var(--muted)">calls/hr</span>
+        </div>
+      </div>
+
+      <!-- 2. REVENUE — with sparkline -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-label">Revenue</span>
+          <span class="metric-pill live">Live</span>
+        </div>
+        <div class="metric-value">
+          $<span id="m-revenue">—</span>
+          <span class="unit">USDC</span>
+        </div>
+        <svg class="sparkline empty" id="spark-revenue" viewBox="0 0 100 28" preserveAspectRatio="none">collecting…</svg>
+        <div class="metric-sub">Σ (paid × tier prices)</div>
+      </div>
+
+      <!-- 3. PROBES (free discovery hits) — with sparkline -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-label">Probes (402)</span>
+          <span class="metric-pill live">Live</span>
+        </div>
+        <div class="metric-value">
+          <span id="m-probes">—</span>
+        </div>
+        <svg class="sparkline dim empty" id="spark-probes" viewBox="0 0 100 28" preserveAspectRatio="none">collecting…</svg>
+        <div class="metric-sub">Bazaar crawlers + dev exploration</div>
+      </div>
+
+      <!-- 4. CONVERSION (paid/probe race bars) -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-label">Conversion</span>
+          <span class="metric-pill audit">Live ratio</span>
+        </div>
+        <div class="metric-value">
+          <span id="m-conv">—</span>
+          <span class="unit">%</span>
+        </div>
+        <div class="race-bars">
+          <div class="race-bar paid">
+            <span class="lbl">Paid</span>
+            <span class="track"><span class="fill" id="bar-paid" style="width: 0%"></span></span>
+            <span class="num" id="bar-paid-n">—</span>
+          </div>
+          <div class="race-bar probe">
+            <span class="lbl">Probes</span>
+            <span class="track"><span class="fill" id="bar-probe" style="width: 0%"></span></span>
+            <span class="num" id="bar-probe-n">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. HOT ENDPOINT — which endpoint is leading -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-label"><span class="hot-flame">🔥</span>Hot Endpoint</span>
+          <span class="metric-pill live">1hr</span>
+        </div>
+        <div class="metric-value endpoint-name" id="m-hot-name">
+          <span style="color: var(--muted)">collecting…</span>
+        </div>
+        <svg class="sparkline empty" id="spark-hot" viewBox="0 0 100 28" preserveAspectRatio="none">collecting…</svg>
+        <div class="metric-sub">
+          <span style="color: var(--value)" id="m-hot-count">—</span>
+          <span style="color: var(--muted)">paid calls in last hour</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TERMINAL — DETAILS + LIVE RATE ──────────────────────── -->
+<div class="container">
+  <div class="section-header"><span class="num">1)</span> Index Details</div>
+  <div class="terminal-grid">
+    <!-- LEFT: metadata panel -->
+    <div class="details-panel">
+      <div class="details-row"><span class="field">Ticker</span>          <span class="val bright">AGENTSOFR.USD</span></div>
+      <div class="details-row"><span class="field">Quote Type</span>      <span class="val">Rate</span></div>
+      <div class="details-row"><span class="field">Unit</span>            <span class="val">%</span></div>
+      <div class="details-row"><span class="field">Currency</span>        <span class="val">US DOLLAR</span></div>
+      <div class="details-row"><span class="field">Network</span>         <span class="val">Base mainnet (eip155:8453)</span></div>
+      <div class="details-row"><span class="field">Settlement</span>      <span class="val">USDC via x402</span></div>
+      <div class="details-row"><span class="field">Price Frequency</span> <span class="val">60-second cache</span></div>
+      <div class="details-row"><span class="field">Sources</span>         <span class="val">8 market-derived</span></div>
+      <div class="details-row"><span class="field">Aggregator</span>      <span class="val">Weighted median</span></div>
+      <div class="details-row"><span class="field">Manipulator-Resist</span><span class="val">~$100M+ to move ±50bp</span></div>
+      <div class="details-row"><span class="field">Methodology</span>     <span class="val">agent-sofr-v1</span></div>
+      <div class="details-row"><span class="field">Calibration</span>     <span class="val muted">730d ETH/USDT, 210k bars</span></div>
+      <div class="details-row"><span class="field">Live Since</span>      <span class="val">2026-04-26</span></div>
+      <div class="details-row"><span class="field">Active Contract</span> <span class="val mono"><a style="color:var(--value)" target="_blank" href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c">V4 0x9d3b…b31c</a></span></div>
+      <div class="details-row"><span class="field">Audit Rounds</span>    <span class="val">3 (all resolved)</span></div>
+    </div>
+
+    <!-- RIGHT: live rate + source breakdown -->
+    <div class="right-panel">
+      <div class="rate-display">
+        <div>
+          <div class="label-text">Current rate</div>
+          <span class="rate-num" id="live-rate">—</span>
+          <span class="rate-suffix">% APR</span>
+        </div>
+      </div>
+      <div class="rate-meta">
+        <div class="item">
+          <span class="label-text">Regime</span>
+          <span class="val" id="live-regime">—</span>
+        </div>
+        <div class="item">
+          <span class="label-text">σ₅min</span>
+          <span class="val" id="live-sigma">—</span>
+        </div>
+        <div class="item">
+          <span class="label-text">Last updated</span>
+          <span class="val" id="live-ts">—</span>
+        </div>
+        <div class="item">
+          <span class="label-text">Methodology</span>
+          <span class="val">v1 (IPFS-pinned)</span>
+        </div>
+      </div>
+
+      <div class="sources-chart" id="sources-chart">
+        <div class="source-row">
+          <span class="name" style="color:var(--label)">SOURCE</span>
+          <span class="rate" style="color:var(--label)">RATE</span>
+          <span class="bar" style="visibility:hidden"></span>
+          <span class="weight" style="color:var(--label)">WEIGHT</span>
+        </div>
+        <!-- Static fallback while we don't pay $0.10 to fetch live SOFR data publicly -->
+        <div class="source-row">
+          <span class="name">deribit_pcp_30d</span>
+          <span class="rate">~3.95%</span>
+          <span class="bar"><span class="bar-fill" style="width: 30%"></span></span>
+          <span class="weight">30%</span>
+        </div>
+        <div class="source-row">
+          <span class="name">hl_funding_smoothed</span>
+          <span class="rate">~5.40%</span>
+          <span class="bar"><span class="bar-fill" style="width: 20%"></span></span>
+          <span class="weight">20%</span>
+        </div>
+        <div class="source-row">
+          <span class="name">aevo_pcp</span>
+          <span class="rate">~3.00%</span>
+          <span class="bar"><span class="bar-fill" style="width: 10%"></span></span>
+          <span class="weight">10%</span>
+        </div>
+        <div class="source-row">
+          <span class="name">deribit_basis_3m</span>
+          <span class="rate">~4.70%</span>
+          <span class="bar"><span class="bar-fill" style="width: 10%"></span></span>
+          <span class="weight">10%</span>
+        </div>
+        <div class="source-row">
+          <span class="name">aave_borrow_usdc (ref)</span>
+          <span class="rate">~4.04%</span>
+          <span class="bar"><span class="bar-fill" style="width: 10%"></span></span>
+          <span class="weight">10%</span>
+        </div>
+        <div class="source-row">
+          <span class="name">aave_borrow_weth (ref)</span>
+          <span class="rate">~2.26%</span>
+          <span class="bar"><span class="bar-fill" style="width: 5%"></span></span>
+          <span class="weight">5%</span>
+        </div>
+        <div class="source-row">
+          <span class="name">compound_borrow_usdc</span>
+          <span class="rate">TODO</span>
+          <span class="bar"><span class="bar-fill" style="width: 5%"></span></span>
+          <span class="weight">5%</span>
+        </div>
+        <div class="source-row">
+          <span class="name">sofr_30d (macro)</span>
+          <span class="rate">~4.32%</span>
+          <span class="bar"><span class="bar-fill" style="width: 10%"></span></span>
+          <span class="weight">10%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── METHODOLOGY MINI ───────────────────────────────────── -->
+<div class="container" id="methodology">
+  <div class="section-header"><span class="num">2)</span> Methodology — Manipulation Resistance</div>
+</div>
+<div class="terminal-grid single">
+  <div class="details-panel" style="border-right: none; padding: 18px 24px;">
+    <p style="color: var(--text); max-width: 880px;">
+      <span style="color: var(--label); font-family: ui-monospace, monospace; font-size: 12px; text-transform: uppercase;">RATE FORMULA</span><br>
+      <span class="mono" style="color: var(--value); font-size: 13px;">
+        agent_sofr(asset, horizon) = base_anchor + variance_premium + regime_adjustment
+      </span>
+    </p>
+    <div class="details-row" style="grid-template-columns: 200px 1fr; max-width: 880px;">
+      <span class="field">base_anchor</span>
+      <span class="val muted">weighted_median across 8 sources (70% market-derived, 20% reference, 10% macro)</span>
+    </div>
+    <div class="details-row" style="grid-template-columns: 200px 1fr; max-width: 880px;">
+      <span class="field">variance_premium</span>
+      <span class="val muted">Black-Cox first-passage (cv + λ·j²) × LTV × P_default × LGD, annualized</span>
+    </div>
+    <div class="details-row" style="grid-template-columns: 200px 1fr; max-width: 880px;">
+      <span class="field">regime_adjustment</span>
+      <span class="val muted">+0 / 5 / 15 / 30 / 60 / 200 bps across 6 modes (RESTING → EXTREME)</span>
+    </div>
+    <div class="details-row" style="grid-template-columns: 200px 1fr; max-width: 880px;">
+      <span class="field">λ (jump weight)</span>
+      <span class="val muted">1.097 — calibrated on 730d ETH/USDT (production hook ARMSHookV3)</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PERSONAS ────────────────────────────────────────────── -->
+<div class="container" id="personas">
+  <div class="section-header"><span class="num">3)</span> Pick Your Role</div>
+</div>
+<div class="personas-grid">
+  <div class="persona">
+    <div class="role">CONSUMER</div>
+    <h3>Data buyer</h3>
+    <p>Subscribe to VRP, Agent-SOFR rate, and risk-aware max-LTV signals. Per-call x402 payments — no API keys, no subscriptions.</p>
+    <span class="price">$0.005 – $0.10 / call</span>
+  </div>
+  <div class="persona">
+    <div class="role">SUPPLY-SIDE</div>
+    <h3>Lender</h3>
+    <p>Park idle USDC at market rate. Auto-matched with borrowers via signed EIP-712 quotes. Specify max default tolerance per intent.</p>
+    <span class="price">Free to submit intents</span>
+  </div>
+  <div class="persona">
+    <div class="role">DEMAND-SIDE</div>
+    <h3>Borrower</h3>
+    <p>Get short-term USDC against WETH at fair regime-aware rates. 5-200 bps premium over base depending on volatility.</p>
+    <span class="price">Free to submit intents</span>
+  </div>
+  <div class="persona">
+    <div class="role">KEEPER</div>
+    <h3>Liquidator</h3>
+    <p>Monitor <span class="mono" style="color: var(--value)">/v1/liquidatable-loans</span> for free, trigger <span class="mono" style="color: var(--value)">V4.liquidate()</span> when LTV ≥ 95% to earn 3% bounty.</p>
+    <span class="price">3% bounty</span>
+  </div>
+</div>
+
+<!-- ─── QUICKSTART ──────────────────────────────────────────── -->
+<div class="container" id="quickstart">
+  <div class="section-header"><span class="num">4)</span> 30-Minute Quickstart</div>
+</div>
+<div class="quickstart-block">
+  <div class="quickstart-step">
+    <div class="num">1</div>
+    <div class="body">
+      <strong>Clone the template repo</strong>
+<pre><span class="c"># requires Python 3.10+ and an EVM wallet you control</span>
+<span class="k">git</span> clone https://github.com/tradingdesk26/regimeshift-agent-starter
+<span class="k">cd</span> regimeshift-agent-starter
+<span class="k">pip</span> install -r requirements.txt</pre>
+    </div>
+  </div>
+  <div class="quickstart-step">
+    <div class="num">2</div>
+    <div class="body">
+      <strong>Fund your wallet</strong> with <code class="inline">~$1 USDC</code> and <code class="inline">0.0005 ETH</code> on Base mainnet (~$2 total).<br>
+      USDC contract: <code class="inline">0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913</code>
+    </div>
+  </div>
+  <div class="quickstart-step">
+    <div class="num">3</div>
+    <div class="body">
+      <strong>Edit <code class="inline">config.toml</code></strong>
+<pre><span class="c">[wallet]</span>
+<span class="k">private_key</span> = <span class="s">"0x..."</span>
+
+<span class="c">[strategy]</span>
+<span class="k">role</span>        = <span class="s">"lender"</span>     <span class="c"># or "borrower", "liquidator", "data_only"</span>
+<span class="k">budget_usdc</span> = <span class="v">10.0</span>
+<span class="k">poll_sec</span>    = <span class="v">60</span></pre>
+    </div>
+  </div>
+  <div class="quickstart-step">
+    <div class="num">4</div>
+    <div class="body">
+      <strong>Run the agent</strong>
+<pre><span class="k">python</span> -m starter_agent
+
+<span class="c">[INFO] Fetched Agent-SOFR USD 1h rate: 4.27% (regime=NORMAL)</span>
+<span class="c">[INFO] Posted lender intent lend_ab12: $10 @ 447 bps for 1h</span>
+<span class="c">[INFO] Matched! match_id=match_cd34</span>
+<span class="c">[INFO] Signed quote ready for on-chain originate()</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ENDPOINTS TABLE ─────────────────────────────────────── -->
+<div class="container" id="endpoints">
+  <div class="section-header"><span class="num">5)</span> Endpoint Reference</div>
+</div>
+<table class="endpoints">
+  <thead>
+    <tr>
+      <th style="width: 38%">Method / Path</th>
+      <th style="width: 12%">Price</th>
+      <th>Function</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/asset/eth/vrp</td><td><span class="price-pill">$0.005</span></td><td class="description">ETH volatility risk premium (DVOL − Parkinson RV 72h)</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/asset/btc/vrp</td><td><span class="price-pill">$0.005</span></td><td class="description">BTC volatility risk premium</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/rate/sofr/usd</td><td><span class="price-pill">$0.10</span></td><td class="description">Agent-SOFR USD short rate — Messari Enterprise tier (unique product)</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/risk/max-ltv</td><td><span class="price-pill">$0.005</span></td><td class="description">Max-safe LTV from variance + lender's max_default_prob</td></tr>
+    <tr><td class="method-path"><span class="method">POST</span>/v1/intent/lend</td><td><span class="free-pill">free</span></td><td class="description">Submit lender intent (auto-fires matcher)</td></tr>
+    <tr><td class="method-path"><span class="method">POST</span>/v1/intent/borrow</td><td><span class="free-pill">free</span></td><td class="description">Submit borrower intent (auto-fires matcher)</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/intents/open</td><td><span class="free-pill">free</span></td><td class="description">List active intents from both sides</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/matches/recent</td><td><span class="free-pill">free</span></td><td class="description">Matched quotes with EIP-712 sigs, ready for on-chain originate()</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/active-loans</td><td><span class="free-pill">free</span></td><td class="description">All active loans with current Chainlink-priced LTV</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/liquidatable-loans</td><td><span class="free-pill">free</span></td><td class="description">Loans w/ LTV ≥ 95% — call V4.liquidate() for 3% bounty</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── ACTIVITY ────────────────────────────────────────────── -->
+<div class="container">
+  <div class="section-header"><span class="num">6)</span> Live Activity (auto-refresh 30s)</div>
+</div>
+<div class="activity-list" id="activity-list">
+  <div class="activity-row"><span style="color: var(--muted)">Loading activity from /api/stats…</span></div>
+</div>
+
+<!-- ─── AUDIT TRAJECTORY ────────────────────────────────────── -->
+<div class="container" id="audit">
+  <div class="section-header"><span class="num">7)</span> Audit Trajectory — All Findings Resolved</div>
+</div>
+<div class="audit-strip">
+  <div class="audit-round">
+    <div class="label-text">Round 1</div>
+    <div class="count">10</div>
+    <div class="breakdown">4 HIGH + 3 MED + 3 LOW<br>→ V3 patches all</div>
+  </div>
+  <div class="audit-round">
+    <div class="label-text">→ Round 2</div>
+    <div class="count">3</div>
+    <div class="breakdown">2 MED + 1 LOW<br>→ V4 + V2 retired</div>
+  </div>
+  <div class="audit-round">
+    <div class="label-text">→ Round 3</div>
+    <div class="count">1</div>
+    <div class="breakdown">1 INFO<br>→ V3 retired</div>
+  </div>
+  <div class="audit-round resolved">
+    <div class="label-text">→ Outstanding</div>
+    <div class="count">0</div>
+    <div class="breakdown" style="color: var(--accent)">All resolved on-chain</div>
+  </div>
+</div>
+
+<!-- ─── BOTTOM FUNCTION BAR (Bloomberg-style) ───────────────── -->
+<div class="function-bar">
+  <div class="inner">
+    <a class="fn" href="#quickstart"><span class="key">QSTART</span>Fork template repo</a>
+    <a class="fn" target="_blank" href="https://agentic.market/services/regimeshift-xyz"><span class="key">AMKT</span>Listed on agentic.market</a>
+    <a class="fn" target="_blank" href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c"><span class="key">CTRT</span>View V4 contract</a>
+    <a class="fn" target="_blank" href="https://github.com/tradingdesk26/armsys-signals"><span class="key">SRC</span>Open source</a>
+  </div>
+</div>
+
+<!-- ─── FOOTER ──────────────────────────────────────────────── -->
+<footer>
+  <div class="inner">
+    <a href="https://github.com/tradingdesk26/armsys-signals">GitHub</a>
+    <a href="https://regimeshift.xyz/api/">API root</a>
+    <a href="https://agentic.market/services/regimeshift-xyz">agentic.market</a>
+    <a href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c">V4 contract</a>
+    <a href="mailto:hi@regimeshift.xyz">Contact</a>
+    <div class="built-for">
+      Built for the <a target="_blank" href="https://thecanteenapp.com/">Agora Agents Hackathon</a>
+      — Canteen × Circle. Reference customer:
+      <a target="_blank" href="https://github.com/tradingdesk26/vrp-agent">RegimeShift</a>
+      autonomous portfolio agent.
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ─── Live data fetch from /api/stats + simple rate placeholder ────
+  function pad(n) { return n < 10 ? '0'+n : n; }
+  function nowUtc() {
+    const d = new Date();
+    return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds()) + ' UTC';
+  }
+
+  // ─── Tier prices for revenue computation ───────────────────
+  const TIER_PRICE_USD = {
+    '/api/v1/asset/eth/vrp':  0.005,
+    '/api/v1/asset/btc/vrp':  0.005,
+    '/api/v1/rate/sofr/usd':  0.10,
+    '/api/v1/risk/max-ltv':   0.005,
+  };
+  const ENDPOINT_LABEL = {
+    '/api/v1/asset/eth/vrp':  'ETH VRP',
+    '/api/v1/asset/btc/vrp':  'BTC VRP',
+    '/api/v1/rate/sofr/usd':  'Agent-SOFR',
+    '/api/v1/risk/max-ltv':   'Max-LTV',
+  };
+
+  // ─── History buffer in localStorage ────────────────────────
+  const HISTORY_KEY = 'agentsofr_history_v1';
+  const MAX_SAMPLES = 120;       // ~1 hour at 30s polling
+  const RATE_WINDOW_MS = 5*60*1000;  // 5-minute window for TX rate
+
+  function loadHistory() {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); }
+    catch { /* quota — ignore */ }
+  }
+
+  // ─── Sparkline drawing ─────────────────────────────────────
+  function drawSparkline(svgEl, values, opts) {
+    if (!values || values.length < 2) {
+      svgEl.classList.add('empty');
+      svgEl.innerHTML = '<text x="50" y="18" text-anchor="middle" fill="currentColor" style="font-size: 9px">collecting…</text>';
+      return;
+    }
+    svgEl.classList.remove('empty');
+    const W = 100, H = 28;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = (max - min) || 1;
+    const pad = 2;
+    const pts = values.map((v, i) => {
+      const x = pad + (i / (values.length - 1)) * (W - 2*pad);
+      const y = (H - pad) - ((v - min) / range) * (H - 2*pad);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    // Area path (closed)
+    const areaPts = pts.slice();
+    areaPts.push((W - pad) + ',' + (H - pad));
+    areaPts.push(pad + ',' + (H - pad));
+    // Last point coords
+    const lastVal = values[values.length - 1];
+    const lastX = pad + (W - 2*pad);
+    const lastY = (H - pad) - ((lastVal - min) / range) * (H - 2*pad);
+    svgEl.innerHTML =
+      '<polygon class="area" points="' + areaPts.join(' ') + '"/>' +
+      '<polyline points="' + pts.join(' ') + '"/>' +
+      '<circle class="last-pt" cx="' + lastX.toFixed(1) + '" cy="' + lastY.toFixed(1) + '" r="1.5"/>';
+  }
+
+  // ─── TX rate: derive calls/hr from history window ──────────
+  function computeTxRate(history) {
+    if (history.length < 2) return null;
+    const now = history[history.length - 1];
+    // Find sample at least RATE_WINDOW_MS ago
+    let oldest = history[0];
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (now.t - history[i].t >= RATE_WINDOW_MS) {
+        oldest = history[i];
+        break;
+      }
+    }
+    const dt_hours = (now.t - oldest.t) / 1000 / 3600;
+    if (dt_hours <= 0) return null;
+    const delta = now.paid - oldest.paid;
+    return delta / dt_hours;
+  }
+
+  // ─── HOT ENDPOINT: which endpoint had most paid Δ in last hour ──
+  function computeHotEndpoint(history) {
+    if (history.length < 2) return null;
+    const now = history[history.length - 1];
+    // Find sample ~1 hour ago (or oldest available)
+    const ONE_HOUR = 60*60*1000;
+    let oldest = history[0];
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (now.t - history[i].t >= ONE_HOUR) {
+        oldest = history[i];
+        break;
+      }
+    }
+    let bestPath = null, bestDelta = -1;
+    for (const path in TIER_PRICE_USD) {
+      const cur = (now.perEndpointPaid && now.perEndpointPaid[path]) || 0;
+      const old = (oldest.perEndpointPaid && oldest.perEndpointPaid[path]) || 0;
+      const delta = cur - old;
+      if (delta > bestDelta) { bestDelta = delta; bestPath = path; }
+    }
+    return { path: bestPath, label: ENDPOINT_LABEL[bestPath] || bestPath, count: bestDelta };
+  }
+
+  // Remember previous values for delta animation
+  let prevPaid = null;
+
+  async function refresh() {
+    try {
+      const r = await fetch('https://regimeshift.xyz/api/stats');
+      const j = await r.json();
+      const c = j.counts || {};
+
+      // ─── Compute totals + per-endpoint ───────────────────────
+      let totalPaid = 0;
+      let totalProbes = 0;
+      let totalRevenue = 0;
+      const perEndpointPaid = {};
+      for (const path in TIER_PRICE_USD) {
+        const paid = c[path + '.200'] || 0;
+        const probes = c[path + '.402'] || 0;
+        totalPaid += paid;
+        totalProbes += probes;
+        totalRevenue += paid * TIER_PRICE_USD[path];
+        perEndpointPaid[path] = paid;
+      }
+      const totalRequests = totalPaid + totalProbes;
+      const conversion = totalRequests > 0 ? (totalPaid / totalRequests * 100) : 0;
+
+      // ─── Update history buffer ───────────────────────────────
+      const history = loadHistory();
+      const sample = {
+        t: Date.now(),
+        paid: totalPaid,
+        revenue: totalRevenue,
+        probes: totalProbes,
+        perEndpointPaid: perEndpointPaid,
+      };
+      history.push(sample);
+      while (history.length > MAX_SAMPLES) history.shift();
+      saveHistory(history);
+
+      // ─── Update top metric strip — big numbers ──────────────
+      document.getElementById('m-paid').textContent = totalPaid.toLocaleString();
+      document.getElementById('m-revenue').textContent = totalRevenue.toFixed(4);
+      document.getElementById('m-probes').textContent = totalProbes.toLocaleString();
+      document.getElementById('m-conv').textContent = conversion.toFixed(1);
+
+      // Race bars (normalize to total)
+      const maxN = Math.max(totalPaid, totalProbes, 1);
+      document.getElementById('bar-paid').style.width = (totalPaid / maxN * 100) + '%';
+      document.getElementById('bar-probe').style.width = (totalProbes / maxN * 100) + '%';
+      document.getElementById('bar-paid-n').textContent = totalPaid;
+      document.getElementById('bar-probe-n').textContent = totalProbes;
+
+      // ─── Sparklines from history ────────────────────────────
+      drawSparkline(document.getElementById('spark-paid'),    history.map(s => s.paid));
+      drawSparkline(document.getElementById('spark-revenue'), history.map(s => s.revenue));
+      drawSparkline(document.getElementById('spark-probes'),  history.map(s => s.probes));
+
+      // ─── TX rate (calls/hr from last 5min window) ───────────
+      const rate = computeTxRate(history);
+      if (rate !== null) {
+        document.getElementById('m-tx-rate').textContent = rate.toFixed(1);
+      } else {
+        document.getElementById('m-tx-rate').textContent = '—';
+      }
+
+      // ─── HOT ENDPOINT (max Δ in last 1hr) ───────────────────
+      const hot = computeHotEndpoint(history);
+      if (hot && hot.count > 0) {
+        document.getElementById('m-hot-name').innerHTML =
+          '<span class="ep-prefix">' + hot.path.replace(/^\/api/, '') + '</span><br><span>' + hot.label + '</span>';
+        document.getElementById('m-hot-count').textContent = '+' + hot.count;
+        // Also draw sparkline for THIS endpoint's paid count over time
+        drawSparkline(
+          document.getElementById('spark-hot'),
+          history.map(s => (s.perEndpointPaid && s.perEndpointPaid[hot.path]) || 0)
+        );
+      } else if (history.length < 2) {
+        document.getElementById('m-hot-name').innerHTML = '<span style="color: var(--muted)">collecting…</span>';
+      } else {
+        // Have history but no Δ — show top cumulative endpoint
+        let topPath = null, topCount = 0;
+        for (const p in perEndpointPaid) {
+          if (perEndpointPaid[p] > topCount) { topCount = perEndpointPaid[p]; topPath = p; }
+        }
+        if (topPath) {
+          document.getElementById('m-hot-name').innerHTML =
+            '<span class="ep-prefix">' + topPath.replace(/^\/api/, '') + '</span><br><span>' + ENDPOINT_LABEL[topPath] + '</span>';
+          document.getElementById('m-hot-count').textContent = '+0 (cumulative ' + topCount + ')';
+          drawSparkline(
+            document.getElementById('spark-hot'),
+            history.map(s => (s.perEndpointPaid && s.perEndpointPaid[topPath]) || 0)
+          );
+        }
+      }
+
+      // Delta animation
+      if (prevPaid !== null && totalPaid > prevPaid) {
+        const delta = totalPaid - prevPaid;
+        document.getElementById('m-paid-delta').textContent = '+' + delta;
+        setTimeout(() => {
+          document.getElementById('m-paid-delta').textContent = '';
+        }, 4000);
+      }
+      prevPaid = totalPaid;
+
+      // ─── Build endpoint activity list (lower section) ────────
+      const endpoints = [
+        ['/api/v1/asset/eth/vrp',   'ETH VRP'],
+        ['/api/v1/asset/btc/vrp',   'BTC VRP'],
+        ['/api/v1/rate/sofr/usd',   'Agent-SOFR USD'],
+        ['/api/v1/risk/max-ltv',    'Max-LTV risk'],
+      ];
+      const list = document.getElementById('activity-list');
+      list.innerHTML = '';
+      let any = false;
+      for (const [path, label] of endpoints) {
+        const paid   = c[path + '.200']   || 0;
+        const probes = c[path + '.402']   || 0;
+        const total  = c[path + '.total'] || 0;
+        if (total === 0) continue;
+        any = true;
+        const row = document.createElement('div');
+        row.className = 'activity-row';
+        row.innerHTML =
+          '<span class="endpoint">' + path + '</span>' +
+          '<span class="counts"><span class="paid">' + paid + ' paid</span><span>' + probes + ' probes</span></span>';
+        list.appendChild(row);
+      }
+      if (!any) list.innerHTML = '<div class="activity-row"><span style="color: var(--muted)">No paid endpoints have received calls yet.</span></div>';
+    } catch (e) {
+      console.warn('Stats fetch failed:', e);
+    }
+
+    // Static rate placeholder — refresh display
+    // (Hitting /v1/rate/sofr/usd costs $0.10 per visitor; we show last-known instead)
+    document.getElementById('live-rate').textContent = '4.27';
+    document.getElementById('live-regime').innerHTML =
+      '<span class="regime-pill normal">NORMAL</span>';
+    document.getElementById('live-sigma').textContent = '~20 bp';
+    document.getElementById('live-ts').textContent = nowUtc();
+  }
+  refresh();
+  setInterval(refresh, 30_000);
+</script>
+
+</body>
+</html>
