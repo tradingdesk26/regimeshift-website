@@ -98,13 +98,22 @@
   </div>
 </div>
 
-<div class="section-header"><span class="num">2)</span> Content integrity</div>
+<div class="section-header"><span class="num">2)</span> Content integrity — three sources of truth</div>
 <table class="t">
   <thead>
-    <tr><th>Document</th><th>SHA-256</th></tr>
+    <tr><th>Document</th><th>SHA-256</th><th>IPFS CID</th></tr>
   </thead>
   <tbody id="hash-rows">
-    <tr><td colspan="2" style="color: var(--muted); text-align: center; padding: 16px;">Loading /methodology/HASHES.txt…</td></tr>
+    <tr>
+      <td><a href="/methodology/agent-sofr-v1">agent-sofr-v1</a></td>
+      <td class="hash-cell">c6fecd2760399a121e543e8568e59fc007e6d55199361df64cb686fdc8ee137f</td>
+      <td class="hash-cell"><a target="_blank" rel="noopener" href="https://ipfs.io/ipfs/bafkreigg73gsoybztijb4vb6qvuolh6aa7tnkumzgyo7mtfwq364r3qtp4">bafkreigg73gsoybztijb4vb6qvuolh6aa7tnkumzgyo7mtfwq364r3qtp4</a></td>
+    </tr>
+    <tr>
+      <td><a href="/methodology/repo-pricing-v1">repo-pricing-v1</a></td>
+      <td class="hash-cell">1b2f6cd347a840cf5f435ba7e9e7b503094a2e983ab9fe609868a81ad5d5d583</td>
+      <td class="hash-cell"><a target="_blank" rel="noopener" href="https://ipfs.io/ipfs/bafkreia3f5wngr5iidhv6q23u7u6pnidbffc5gb2xh7gbgdivannlvovqm">bafkreia3f5wngr5iidhv6q23u7u6pnidbffc5gb2xh7gbgdivannlvovqm</a></td>
+    </tr>
   </tbody>
 </table>
 
@@ -128,31 +137,10 @@ diff &lt;(curl https://regimeshift.xyz/methodology/agent-sofr-v1 | shasum -a 256
   </div>
 </div>
 
-<script>
-  // Pull HASHES.txt and render the table — same file we publish as integrity record
-  fetch('/methodology/HASHES.txt')
-    .then(r => r.ok ? r.text() : Promise.reject(r.status))
-    .then(txt => {
-      const rows = [];
-      txt.split('\n').forEach(line => {
-        const m = line.match(/^([a-f0-9]+)\s+(.+\.html)$/);
-        if (!m) return;
-        const filename = m[2].replace(/^.*\//, '');
-        const docname  = filename.replace(/\.html$/, '');
-        rows.push(
-          '<tr><td><a href="/methodology/' + docname + '">' + docname + '</a></td>' +
-          '<td class="hash-cell">' + m[1] + '</td></tr>'
-        );
-      });
-      document.getElementById('hash-rows').innerHTML =
-        rows.length ? rows.join('') :
-        '<tr><td colspan="2" style="color: var(--muted); text-align: center; padding: 16px;">HASHES.txt not found yet — first deploy in progress.</td></tr>';
-    })
-    .catch(e => {
-      document.getElementById('hash-rows').innerHTML =
-        '<tr><td colspan="2" style="color: var(--muted); text-align: center; padding: 16px;">HASHES.txt fetch failed.</td></tr>';
-    });
-</script>
+<!-- Hashes are baked into HTML above (static); also published verbatim at
+     /methodology/HASHES.txt for machine readers. Any drift between this
+     page and the actual file will be visible in seconds — anyone can
+     re-run shasum and compare. -->
 
 </body>
 </html>
