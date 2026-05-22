@@ -238,11 +238,11 @@
     </div>
     <div>
       <span class="field">Calibration data</span>
-      <span class="value">210,228 ETH/USDT 5-min bars (2024-04 → 2026-04)</span>
+      <span class="value">444,219 5-min bars (~4.2 yr) · Binance ETH/USDC 1s-tick aggregated</span>
     </div>
     <div>
       <span class="field">Calibration source</span>
-      <span class="value"><a class="ext" target="_blank" rel="noopener" href="https://github.com/tradingdesk26/arms/blob/main/research/round25_calibration.csv">arms/research/round25_calibration.csv</a></span>
+      <span class="value"><a class="ext" target="_blank" rel="noopener" href="https://github.com/tradingdesk26/arms/blob/main/research/eth_jump_multihorizon.py">arms/research/eth_jump_multihorizon.py</a> (Barndorff-Nielsen–Shephard + closed-form λ)</span>
     </div>
   </div>
 </div>
@@ -295,14 +295,29 @@
 <div class="panel">
   <p>The base anchor only tells you what borrowers pay <em>on average</em>. To price a specific loan you need the <strong>variance premium</strong>: the expected loss from collateral defaults given current realized + jump volatility.</p>
 
-  <p>We use the production-tested variance decomposition from <a class="ext" target="_blank" rel="noopener" href="https://github.com/tradingdesk26/arms">ARMSHookV3</a> — our Uniswap v4 hook deployed on Base mainnet for weeks. We don't invent new math; we re-use validated math.</p>
+  <p>We use the <strong>Barndorff-Nielsen &amp; Shephard (2004, 2006)</strong> jump decomposition — the canonical method in econometrics for separating diffusive (continuous) variance from price jumps. Same math as production code in <a class="ext" target="_blank" rel="noopener" href="https://github.com/tradingdesk26/arms">ARMSHookV3</a> (Uniswap v4 hook live on Base mainnet).</p>
 
-  <div class="formula">total_variance_per_bar = cv + λ·j²
+  <div class="formula">Per 5-minute bar, using 1-second sub-bar returns r_i:
 
-  where:
-    cv = continuous variance        (Derman-style realized variance, 5-min bars, jumps excluded)
-    j² = jump variance squared      (Merton spike component, |r| &gt; p95 threshold)
-    λ  = 1.097                      (calibrated jump weight; arms/src/bench/FeeFormulaV2.sol)</div>
+  RV       = Σ r_i²                                  total realized variance
+  BV       = (π/2) · Σ |r_i|·|r_{i-1}|               bipower variation — jump-robust
+  TQ       = μ_{4/3}⁻³ · Σ |r|^{4/3} (tripower)      tripower quarticity
+  Z        = √n · (RV − BV) / √(K · TQ)              Huang-Tauchen normalised jump statistic
+  jump_sig = (Z &gt; 2.326)                              one-sided test, p &lt; 0.01
+
+  cv       = BV  if jump_sig else RV                  continuous-only variance
+  j²       = max(RV − cv, 0)                          jump variance squared
+
+  total_variance_per_bar = cv + λ·j²                  combined estimator
+    where  λ = 1.097</div>
+
+  <p><strong>Identification of λ.</strong> Closed-form on the full 4.2-year dataset (444,219 bars), solved so total fee revenue covers impermanent loss with a 5% margin:</p>
+
+  <div class="formula">λ = [ Σ(RV·TVL/8 · 1.05)  −  Σ(f_cont · V) ]  /  Σ(j²·TVL/8)</div>
+
+  <p>Numerator = required total fee revenue (with 5% buffer) minus what the continuous-only fee schedule already covers; denominator = variance contributed by jumps. Solving this in <a class="ext" target="_blank" rel="noopener" href="https://github.com/tradingdesk26/arms/blob/main/research/eth_jump_multihorizon.py">eth_jump_multihorizon.py:run_horizon</a> yields <strong>λ = 1.0968</strong> for the 5-minute horizon, rounded to 1.097 in production (<code class="inline">LAMBDA = 1.097</code> in <code class="inline">eth_segmented_fee.py:41</code>).</p>
+
+  <p>Sensitivity-checked via a sweep over <code class="inline">λ ∈ {0.50, 0.80, 1.00, 1.097, 1.30, 1.60, 2.00}</code> in <code class="inline">eth_hook_bar_pnl.py</code> — the production value sits within the robust plateau where PnL is insensitive to ±20% perturbations of λ.</p>
 
   <p>Over an arbitrary loan horizon <code class="inline">T</code> (expressed in 5-minute bars):</p>
 
@@ -334,7 +349,7 @@ variance_premium(LTV, σ_T, T) = LTV · P_default · LGD · (bars_per_year / T) 
 <div class="panel">
   <p>The variance_premium handles continuous risk. But realized jump-distribution evidence shows that <strong>extreme regimes have heavier tails than continuous models predict</strong>. The regime adjustment is an empirical correction: a step function that adds bps based on which of six volatility buckets we're currently in.</p>
 
-  <p>Boundaries are calibrated from 210,228 ETH/USDT 5-min bars (2024-04-26 → 2026-04-26). Time-share columns are observed frequencies — <strong>78% of the time the market is in RESTING/LOW/NORMAL</strong>, only 1.1% of bars are in EXTREME.</p>
+  <p>Boundaries are calibrated from <strong>444,219 5-min bars (~4.2 years)</strong> of Binance <strong>ETH/USDC</strong> 1-second tickers aggregated upward (<code class="inline">binance_history_eth.db</code>). Time-share columns are observed frequencies — <strong>78% of the time the market is in RESTING/LOW/NORMAL</strong>, only 1.1% of bars are in EXTREME.</p>
 
   <table class="t">
     <thead>
