@@ -697,6 +697,80 @@
     margin-right: 4px;
   }
 
+  /* ─── Open order book (lenders | borrowers) ────────────────── */
+  .order-book {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  @media (max-width: 800px) {
+    .order-book { grid-template-columns: 1fr; }
+  }
+  .order-book-side {
+    background: var(--panel);
+    padding: 0;
+  }
+  .order-book-side .side-header {
+    background: var(--bg-darker);
+    padding: 10px 16px;
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    color: var(--label);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .order-book-side .side-header .count {
+    color: var(--value);
+    font-size: 11px;
+  }
+  .order-book-side.lend .side-header {
+    border-left: 2px solid var(--accent);
+  }
+  .order-book-side.borrow .side-header {
+    border-left: 2px solid var(--warn);
+  }
+  .order-book-row {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+  }
+  .order-book-row:last-child { border-bottom: none; }
+  .order-book-row .ob-wallet {
+    color: var(--value);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--border);
+  }
+  .order-book-row .ob-wallet:hover {
+    color: var(--value-bright);
+    border-bottom-color: var(--value-bright);
+  }
+  .order-book-row .ob-amount  { color: var(--value-bright); }
+  .order-book-row .ob-rate    { color: var(--value); }
+  .order-book-row .ob-rate .unit { color: var(--muted); font-size: 10px; margin-left: 3px; }
+  .order-book-row .ob-meta    { color: var(--muted); font-size: 10px; text-align: right; }
+  .order-book-row .ob-meta .expires {
+    color: var(--warn);
+  }
+  .order-book-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+  }
+
   /* ─── Loan registry table ─────────────────────────────────── */
   .loan-registry {
     width: 100%;
@@ -977,9 +1051,34 @@
   </tbody>
 </table>
 
+<!-- ─── OPEN ORDER BOOK — waiting intents (both sides) ─────── -->
+<div class="container" id="orderbook">
+  <div class="section-header"><span class="num">2)</span> Open Order Book — Intents Waiting to Match</div>
+</div>
+<div class="order-book" id="order-book-grid">
+  <div class="order-book-side lend">
+    <div class="side-header">
+      <span>Lenders — Willing to Give USDC</span>
+      <span class="count" id="ob-lend-count">…</span>
+    </div>
+    <div id="ob-lend-rows">
+      <div class="order-book-empty">Loading /v1/intents/open…</div>
+    </div>
+  </div>
+  <div class="order-book-side borrow">
+    <div class="side-header">
+      <span>Borrowers — Want USDC vs WETH Collateral</span>
+      <span class="count" id="ob-borrow-count">…</span>
+    </div>
+    <div id="ob-borrow-rows">
+      <div class="order-book-empty">Loading /v1/intents/open…</div>
+    </div>
+  </div>
+</div>
+
 <!-- ─── TERMINAL — DETAILS + LIVE RATE ──────────────────────── -->
 <div class="container">
-  <div class="section-header"><span class="num">2)</span> Index Details</div>
+  <div class="section-header"><span class="num">3)</span> Index Details</div>
   <div class="terminal-grid">
     <!-- LEFT: metadata panel -->
     <div class="details-panel">
@@ -990,7 +1089,7 @@
       <div class="details-row"><span class="field">Network</span>         <span class="val">Base mainnet (eip155:8453)</span></div>
       <div class="details-row"><span class="field">Settlement</span>      <span class="val">USDC via x402</span></div>
       <div class="details-row"><span class="field">Price Frequency</span> <span class="val">60-second cache</span></div>
-      <div class="details-row"><span class="field">Sources</span>         <span class="val">8 market-derived</span></div>
+      <div class="details-row"><span class="field">Sources</span>         <span class="val">7 (4 market + 2 DeFi reference + 1 macro)</span></div>
       <div class="details-row"><span class="field">Aggregator</span>      <span class="val">Weighted median</span></div>
       <div class="details-row"><span class="field">Manipulator-Resist</span><span class="val">~$100M+ to move ±50bp</span></div>
       <div class="details-row"><span class="field">Methodology</span>     <span class="val">agent-sofr-v1</span></div>
@@ -1085,7 +1184,7 @@
 
 <!-- ─── METHODOLOGY MINI ───────────────────────────────────── -->
 <div class="container" id="methodology">
-  <div class="section-header"><span class="num">3)</span> Methodology — Manipulation Resistance</div>
+  <div class="section-header"><span class="num">4)</span> Methodology — Manipulation Resistance</div>
 </div>
 <div class="terminal-grid single">
   <div class="details-panel" style="border-right: none; padding: 18px 24px;">
@@ -1116,7 +1215,7 @@
 
 <!-- ─── PERSONAS ────────────────────────────────────────────── -->
 <div class="container" id="personas">
-  <div class="section-header"><span class="num">4)</span> Pick Your Role</div>
+  <div class="section-header"><span class="num">5)</span> Pick Your Role</div>
 </div>
 <div class="personas-grid">
   <div class="persona">
@@ -1147,7 +1246,7 @@
 
 <!-- ─── QUICKSTART ──────────────────────────────────────────── -->
 <div class="container" id="quickstart">
-  <div class="section-header"><span class="num">5)</span> 30-Minute Quickstart</div>
+  <div class="section-header"><span class="num">6)</span> 30-Minute Quickstart</div>
 </div>
 <div class="quickstart-block">
   <div class="quickstart-step">
@@ -1196,7 +1295,7 @@
 
 <!-- ─── ENDPOINTS TABLE ─────────────────────────────────────── -->
 <div class="container" id="endpoints">
-  <div class="section-header"><span class="num">6)</span> Endpoint Reference</div>
+  <div class="section-header"><span class="num">7)</span> Endpoint Reference</div>
 </div>
 <table class="endpoints">
   <thead>
@@ -1267,7 +1366,7 @@
 
 <!-- ─── ACTIVITY ────────────────────────────────────────────── -->
 <div class="container">
-  <div class="section-header"><span class="num">7)</span> Live Activity (auto-refresh 30s)</div>
+  <div class="section-header"><span class="num">8)</span> Live Activity (auto-refresh 30s)</div>
 </div>
 <div class="activity-list" id="activity-list">
   <div class="activity-row"><span style="color: var(--muted)">Loading activity from /api/stats…</span></div>
@@ -1275,7 +1374,7 @@
 
 <!-- ─── AUDIT TRAJECTORY ────────────────────────────────────── -->
 <div class="container" id="audit">
-  <div class="section-header"><span class="num">8)</span> Audit Trajectory — All Findings Resolved</div>
+  <div class="section-header"><span class="num">9)</span> Audit Trajectory — All Findings Resolved</div>
 </div>
 <div class="audit-strip">
   <div class="audit-round">
@@ -1646,6 +1745,78 @@
   }
   refreshLoanRegistry();
   setInterval(refreshLoanRegistry, 30_000);
+
+  // ─── Open order book ────────────────────────────────────────
+  function expiresIn(unix) {
+    const left = Math.max(0, Math.floor(unix - Date.now() / 1000));
+    if (left < 60)   return left + 's';
+    if (left < 3600) return Math.floor(left / 60) + 'm';
+    return Math.floor(left / 3600) + 'h ' + Math.floor((left % 3600) / 60) + 'm';
+  }
+  function fmtDuration(sec) {
+    if (sec < 60)   return sec + 's';
+    if (sec < 3600) return Math.floor(sec / 60) + 'm';
+    return (sec / 3600).toFixed(1) + 'h';
+  }
+  async function refreshOrderBook() {
+    try {
+      const r = await fetch('https://regimeshift.xyz/api/v1/intents/open');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      const lenders   = data.lenders   || [];
+      const borrowers = data.borrowers || [];
+
+      document.getElementById('ob-lend-count').textContent =
+        lenders.length + ' open' + (lenders.length ? ' · live' : '');
+      document.getElementById('ob-borrow-count').textContent =
+        borrowers.length + ' open' + (borrowers.length ? ' · live' : '');
+
+      const lendBox = document.getElementById('ob-lend-rows');
+      if (lenders.length === 0) {
+        lendBox.innerHTML =
+          '<div class="order-book-empty">No lenders waiting. ' +
+          '<a class="ob-wallet" href="#quickstart">Be the first</a> — ' +
+          'POST /v1/intent/lend with your terms.</div>';
+      } else {
+        lendBox.innerHTML = lenders.map(ln => (
+          '<div class="order-book-row">' +
+            '<a class="ob-wallet" target="_blank" rel="noopener" href="https://basescan.org/address/' + ln.wallet + '">' +
+              shortAddr(ln.wallet) +
+            '</a>' +
+            '<span class="ob-amount">$' + Number(ln.amount).toFixed(2) + '</span>' +
+            '<span class="ob-rate">≥' + ln.min_rate_bps + '<span class="unit">bps</span></span>' +
+            '<span class="ob-meta">≤' + fmtDuration(ln.max_duration_sec) +
+              ' · <span class="expires">' + expiresIn(ln.expires_at) + ' left</span></span>' +
+          '</div>'
+        )).join('');
+      }
+
+      const borBox = document.getElementById('ob-borrow-rows');
+      if (borrowers.length === 0) {
+        borBox.innerHTML =
+          '<div class="order-book-empty">No borrowers waiting. ' +
+          '<a class="ob-wallet" href="#quickstart">Be the first</a> — ' +
+          'POST /v1/intent/borrow with your collateral.</div>';
+      } else {
+        borBox.innerHTML = borrowers.map(br => (
+          '<div class="order-book-row">' +
+            '<a class="ob-wallet" target="_blank" rel="noopener" href="https://basescan.org/address/' + br.wallet + '">' +
+              shortAddr(br.wallet) +
+            '</a>' +
+            '<span class="ob-amount">$' + Number(br.principal_amount).toFixed(2) + '</span>' +
+            '<span class="ob-rate">≤' + br.max_rate_bps + '<span class="unit">bps</span></span>' +
+            '<span class="ob-meta">' + Number(br.collateral_amount_max).toFixed(4) + ' WETH max · ' +
+              fmtDuration(br.duration_sec) +
+              ' · <span class="expires">' + expiresIn(br.expires_at) + ' left</span></span>' +
+          '</div>'
+        )).join('');
+      }
+    } catch (e) {
+      console.warn('Order book fetch failed:', e);
+    }
+  }
+  refreshOrderBook();
+  setInterval(refreshOrderBook, 15_000);   // book changes faster than registry
 </script>
 
 </body>
