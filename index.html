@@ -697,6 +697,82 @@
     margin-right: 4px;
   }
 
+  /* ─── Loan registry table ─────────────────────────────────── */
+  .loan-registry {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+  }
+  .loan-registry th, .loan-registry td {
+    padding: 7px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-soft);
+    white-space: nowrap;
+  }
+  .loan-registry th {
+    background: var(--bg-darker);
+    color: var(--label);
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+  }
+  .loan-registry td.time-col { color: var(--muted); font-size: 10px; }
+  .loan-registry td.amount-col { color: var(--value); }
+  .loan-registry td.rate-col { color: var(--value-bright); }
+  .loan-registry td.rate-col .pct { color: var(--muted); font-size: 10px; margin-left: 4px; }
+  .loan-registry td.ltv-col { color: var(--value); }
+  .loan-registry .addr-link, .loan-registry .tx-link {
+    color: var(--value);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--border);
+  }
+  .loan-registry .addr-link:hover, .loan-registry .tx-link:hover {
+    color: var(--value-bright);
+    border-bottom-color: var(--value-bright);
+  }
+  .loan-registry .status-pill {
+    padding: 1px 7px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+  .loan-registry .status-active     { color: var(--warn);   border-color: var(--warn);   background: rgba(245,158,11,0.08); }
+  .loan-registry .status-repaid     { color: var(--accent); border-color: var(--accent); background: rgba(16,185,129,0.10); }
+  .loan-registry .status-defaulted  { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.10); }
+  .loan-registry .status-liquidated { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.15); }
+  .loan-registry .loan-id-row td {
+    padding-top: 0;
+    padding-bottom: 8px;
+    color: var(--muted);
+    font-size: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .loan-registry .loan-id-row .label-tag {
+    color: var(--label-dim);
+    margin-right: 6px;
+  }
+  .loan-registry-empty {
+    background: var(--panel);
+    padding: 20px 16px;
+    text-align: center;
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+  }
+  /* Hide rate-pct on narrow screens to keep table compact */
+  @media (max-width: 1100px) {
+    .loan-registry { font-size: 10px; }
+    .loan-registry td.rate-col .pct { display: none; }
+    .loan-registry th, .loan-registry td { padding: 6px 7px; }
+  }
+
   /* ─── Bottom function bar ─────────────────────────────────── */
   .function-bar {
     background: var(--bg-darker);
@@ -877,9 +953,33 @@
   </div>
 </div>
 
+<!-- ─── LOAN REGISTRY — every loan is receipt-visible ──────── -->
+<div class="container" id="registry">
+  <div class="section-header"><span class="num">1)</span> Loan Registry — Every Loan, On-Chain, Receipt-Visible</div>
+</div>
+<table class="loan-registry">
+  <thead>
+    <tr>
+      <th>Originated</th>
+      <th>Status</th>
+      <th>Borrower</th>
+      <th>Lender</th>
+      <th>Principal</th>
+      <th>Collateral</th>
+      <th>Rate</th>
+      <th>Init. LTV</th>
+      <th>Originate Tx</th>
+      <th>Close Tx</th>
+    </tr>
+  </thead>
+  <tbody id="loan-rows">
+    <tr><td colspan="10" class="loan-registry-empty">Loading on-chain loan lifecycle from /v1/loans/registry…</td></tr>
+  </tbody>
+</table>
+
 <!-- ─── TERMINAL — DETAILS + LIVE RATE ──────────────────────── -->
 <div class="container">
-  <div class="section-header"><span class="num">1)</span> Index Details</div>
+  <div class="section-header"><span class="num">2)</span> Index Details</div>
   <div class="terminal-grid">
     <!-- LEFT: metadata panel -->
     <div class="details-panel">
@@ -985,7 +1085,7 @@
 
 <!-- ─── METHODOLOGY MINI ───────────────────────────────────── -->
 <div class="container" id="methodology">
-  <div class="section-header"><span class="num">2)</span> Methodology — Manipulation Resistance</div>
+  <div class="section-header"><span class="num">3)</span> Methodology — Manipulation Resistance</div>
 </div>
 <div class="terminal-grid single">
   <div class="details-panel" style="border-right: none; padding: 18px 24px;">
@@ -1016,7 +1116,7 @@
 
 <!-- ─── PERSONAS ────────────────────────────────────────────── -->
 <div class="container" id="personas">
-  <div class="section-header"><span class="num">3)</span> Pick Your Role</div>
+  <div class="section-header"><span class="num">4)</span> Pick Your Role</div>
 </div>
 <div class="personas-grid">
   <div class="persona">
@@ -1047,7 +1147,7 @@
 
 <!-- ─── QUICKSTART ──────────────────────────────────────────── -->
 <div class="container" id="quickstart">
-  <div class="section-header"><span class="num">4)</span> 30-Minute Quickstart</div>
+  <div class="section-header"><span class="num">5)</span> 30-Minute Quickstart</div>
 </div>
 <div class="quickstart-block">
   <div class="quickstart-step">
@@ -1096,7 +1196,7 @@
 
 <!-- ─── ENDPOINTS TABLE ─────────────────────────────────────── -->
 <div class="container" id="endpoints">
-  <div class="section-header"><span class="num">5)</span> Endpoint Reference</div>
+  <div class="section-header"><span class="num">6)</span> Endpoint Reference</div>
 </div>
 <table class="endpoints">
   <thead>
@@ -1167,7 +1267,7 @@
 
 <!-- ─── ACTIVITY ────────────────────────────────────────────── -->
 <div class="container">
-  <div class="section-header"><span class="num">6)</span> Live Activity (auto-refresh 30s)</div>
+  <div class="section-header"><span class="num">7)</span> Live Activity (auto-refresh 30s)</div>
 </div>
 <div class="activity-list" id="activity-list">
   <div class="activity-row"><span style="color: var(--muted)">Loading activity from /api/stats…</span></div>
@@ -1175,7 +1275,7 @@
 
 <!-- ─── AUDIT TRAJECTORY ────────────────────────────────────── -->
 <div class="container" id="audit">
-  <div class="section-header"><span class="num">7)</span> Audit Trajectory — All Findings Resolved</div>
+  <div class="section-header"><span class="num">8)</span> Audit Trajectory — All Findings Resolved</div>
 </div>
 <div class="audit-strip">
   <div class="audit-round">
@@ -1480,6 +1580,72 @@
   }
   refresh();
   setInterval(refresh, 30_000);
+
+  // ─── Loan registry fetcher ───────────────────────────────────
+  function fmtTime(unix) {
+    const d = new Date(unix * 1000);
+    const iso = d.toISOString();
+    return iso.slice(0, 10) + ' ' + iso.slice(11, 19) + 'Z';
+  }
+  function shortAddr(a) {
+    if (!a) return '—';
+    return a.slice(0, 6) + '…' + a.slice(-4);
+  }
+  function shortTx(h) {
+    if (!h) return '—';
+    return h.slice(0, 10) + '…';
+  }
+  async function refreshLoanRegistry() {
+    try {
+      const r = await fetch('https://regimeshift.xyz/api/v1/loans/registry?limit=25');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      const tbody = document.getElementById('loan-rows');
+      if (!data.loans || data.loans.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="10" class="loan-registry-empty">' +
+          'No loans on V4 yet — <a class="addr-link" href="#quickstart">be the first agent</a> ' +
+          'to submit an intent and originate.' +
+          '</td></tr>';
+        return;
+      }
+
+      const rows = [];
+      for (const loan of data.loans) {
+        const closeLink = loan.close_tx
+          ? '<a class="tx-link" target="_blank" rel="noopener" href="https://basescan.org/tx/' + loan.close_tx + '">' + shortTx(loan.close_tx) + '</a>'
+          : '<span style="color:var(--muted)">—</span>';
+        const interestNote = loan.interest_paid_usdc !== undefined
+          ? ' · interest $' + loan.interest_paid_usdc.toFixed(6)
+          : '';
+        rows.push(
+          '<tr>' +
+            '<td class="time-col">' + fmtTime(loan.originate_timestamp) + '</td>' +
+            '<td><span class="status-pill status-' + loan.status + '">' + loan.status + '</span></td>' +
+            '<td><a class="addr-link" target="_blank" rel="noopener" href="https://basescan.org/address/' + loan.borrower + '">' + shortAddr(loan.borrower) + '</a></td>' +
+            '<td><a class="addr-link" target="_blank" rel="noopener" href="https://basescan.org/address/' + loan.lender + '">' + shortAddr(loan.lender) + '</a></td>' +
+            '<td class="amount-col">$' + loan.principal_amount_usdc.toFixed(2) + ' USDC</td>' +
+            '<td class="amount-col">' + loan.collateral_amount_weth.toFixed(6) + ' WETH</td>' +
+            '<td class="rate-col">' + loan.rate_bps + ' bps<span class="pct">' + loan.rate_pct.toFixed(2) + '%</span></td>' +
+            '<td class="ltv-col">' + loan.initial_ltv_pct.toFixed(2) + '%</td>' +
+            '<td><a class="tx-link" target="_blank" rel="noopener" href="https://basescan.org/tx/' + loan.originate_tx + '">' + shortTx(loan.originate_tx) + '</a></td>' +
+            '<td>' + closeLink + '</td>' +
+          '</tr>' +
+          '<tr class="loan-id-row"><td colspan="10">' +
+            '<span class="label-tag">loan_id</span>' + loan.loan_id +
+            '<span style="margin-left: 18px; color: var(--muted)">· ETH ref price at origin $' + loan.eth_price_origin.toFixed(2) +
+            ' · duration ' + loan.duration_sec + 's' + interestNote +
+          '</td></tr>'
+        );
+      }
+      tbody.innerHTML = rows.join('');
+    } catch (e) {
+      console.warn('Loan registry fetch failed:', e);
+      // Don't blow away existing table on transient errors
+    }
+  }
+  refreshLoanRegistry();
+  setInterval(refreshLoanRegistry, 30_000);
 </script>
 
 </body>
