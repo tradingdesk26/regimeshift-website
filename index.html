@@ -762,6 +762,7 @@
     <a class="nav-tab" href="#personas"><span class="num">R)</span> Roles</a>
     <a class="nav-tab" href="#quickstart"><span class="num">Q)</span> Quickstart</a>
     <a class="nav-tab" href="#endpoints"><span class="num">E)</span> Endpoints</a>
+    <a class="nav-tab" href="#notify" style="background: var(--header-bg); color: var(--label);"><span class="num">N)</span> Notify</a>
     <a class="nav-tab" href="#audit"><span class="num">A)</span> Audits</a>
     <a class="nav-tab right" target="_blank" href="https://github.com/tradingdesk26/armsys-signals">GitHub →</a>
   </div>
@@ -1116,14 +1117,59 @@
     <tr><td class="method-path"><span class="method">GET</span>/v1/asset/btc/vrp</td><td><span class="price-pill">$0.005</span></td><td class="description">BTC volatility risk premium</td></tr>
     <tr><td class="method-path"><span class="method">GET</span>/v1/rate/sofr/usd</td><td><span class="price-pill">$0.10</span></td><td class="description">Agent-SOFR USD short rate — Messari Enterprise tier (unique product)</td></tr>
     <tr><td class="method-path"><span class="method">GET</span>/v1/risk/max-ltv</td><td><span class="price-pill">$0.005</span></td><td class="description">Max-safe LTV from variance + lender's max_default_prob</td></tr>
-    <tr><td class="method-path"><span class="method">POST</span>/v1/intent/lend</td><td><span class="free-pill">free</span></td><td class="description">Submit lender intent (auto-fires matcher)</td></tr>
-    <tr><td class="method-path"><span class="method">POST</span>/v1/intent/borrow</td><td><span class="free-pill">free</span></td><td class="description">Submit borrower intent (auto-fires matcher)</td></tr>
+    <tr><td class="method-path"><span class="method">POST</span>/v1/intent/lend</td><td><span class="free-pill">free</span></td><td class="description">Submit lender intent (auto-fires matcher). Optional <span style="color:var(--label)">webhook_url</span> for push notification on match.</td></tr>
+    <tr><td class="method-path"><span class="method">POST</span>/v1/intent/borrow</td><td><span class="free-pill">free</span></td><td class="description">Submit borrower intent. Optional <span style="color:var(--label)">webhook_url</span> for push notification.</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/intent/{id}/match?wait=N</td><td><span class="free-pill">free</span></td><td class="description"><strong style="color:var(--accent)">Long-poll</strong> — holds connection up to 300s, returns immediately when match found</td></tr>
     <tr><td class="method-path"><span class="method">GET</span>/v1/intents/open</td><td><span class="free-pill">free</span></td><td class="description">List active intents from both sides</td></tr>
     <tr><td class="method-path"><span class="method">GET</span>/v1/matches/recent</td><td><span class="free-pill">free</span></td><td class="description">Matched quotes with EIP-712 sigs, ready for on-chain originate()</td></tr>
     <tr><td class="method-path"><span class="method">GET</span>/v1/active-loans</td><td><span class="free-pill">free</span></td><td class="description">All active loans with current Chainlink-priced LTV</td></tr>
     <tr><td class="method-path"><span class="method">GET</span>/v1/liquidatable-loans</td><td><span class="free-pill">free</span></td><td class="description">Loans w/ LTV ≥ 95% — call V4.liquidate() for 3% bounty</td></tr>
   </tbody>
 </table>
+
+<!-- ─── MATCH NOTIFICATIONS ────────────────────────────────── -->
+<div class="container" id="notify">
+  <div class="section-header"><span class="num">N)</span> Match Notifications — No Polling Required</div>
+</div>
+<div class="quickstart-block">
+  <p style="color: var(--text); max-width: 880px; margin-top: 0;">
+    Submitted an intent but the order book is empty? Two ways to get notified the moment a match arrives — no client-side polling, no wasted CPU.
+  </p>
+
+  <div class="quickstart-step">
+    <div class="num">A</div>
+    <div class="body">
+      <strong>Webhook (push)</strong> — pass a callback URL when submitting:
+<pre><span class="k">POST</span> /v1/intent/lend
+{
+  <span class="s">"wallet"</span>: <span class="v">"0xMyAgent..."</span>,
+  <span class="s">"asset"</span>: <span class="v">"USDC"</span>,
+  <span class="s">"amount"</span>: <span class="v">50</span>,
+  <span class="s">"min_rate_bps"</span>: <span class="v">480</span>,
+  <span class="s">"max_duration_sec"</span>: <span class="v">14400</span>,
+  <span class="s">"webhook_url"</span>: <span class="v">"https://my-agent.example.com/match-callback"</span>  <span class="c">// ← NEW</span>
+}</pre>
+      When match fires, server <code class="inline">POST</code>s the signed quote to your URL within ~1s. Best for hosted agents with public endpoints.
+    </div>
+  </div>
+
+  <div class="quickstart-step">
+    <div class="num">B</div>
+    <div class="body">
+      <strong>Long-poll (no public URL needed)</strong> — single GET that holds up to 300s:
+<pre><span class="k">GET</span> /v1/intent/lend_abc123/match?wait=300
+
+<span class="c"># Returns immediately if matched, otherwise holds connection until match or timeout</span>
+{
+  <span class="s">"matched"</span>: <span class="v">true</span>,
+  <span class="s">"match_id"</span>: <span class="v">"match_xyz..."</span>,
+  <span class="s">"elapsed_sec"</span>: <span class="v">8.2</span>,
+  <span class="s">"quote"</span>: { /* full signed EIP-712 payload */ }
+}</pre>
+      Works for local, serverless, or any agent that can hold a single TCP connection. Re-poll on timeout — effectively zero overhead between calls.
+    </div>
+  </div>
+</div>
 
 <!-- ─── ACTIVITY ────────────────────────────────────────────── -->
 <div class="container">
