@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RegimeShift Clearinghouse · Deck</title>
+<meta name="description" content="Bloomberg-style pitch deck for RegimeShift Clearinghouse — the AI central bank for the agent economy. Live on Base mainnet.">
+<style>
+  :root {
+    --bg:#0a0e14;--bg-darker:#060a0f;--panel:#0e1419;--panel-2:#131a22;
+    --border:#1f2937;--border-soft:#1a242f;
+    --label:#e6a14b;--label-dim:#b8843e;
+    --value:#6ed4c7;--value-bright:#8aebde;
+    --header-bg:#1f3d3d;--header-fg:#d4a06a;
+    --text:#d1d5db;--text-bright:#f3f4f6;--muted:#6b7280;
+    --accent:#10b981;--accent-dim:#047857;
+    --warn:#f59e0b;--danger:#ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; overflow: hidden; }
+
+  /* Top terminal bar */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--bg-darker); border-bottom: 2px solid var(--header-bg);
+    padding: 8px 18px; font-family: ui-monospace, monospace; font-size: 11px;
+    display: flex; justify-content: space-between; align-items: center;
+    color: var(--muted);
+  }
+  .topbar .left a { color: var(--label); text-decoration: none; margin-right: 14px; }
+  .topbar .left a:hover { color: var(--value-bright); }
+  .topbar .ticker { color: var(--value); }
+  .topbar .ticker .v { color: var(--value-bright); font-weight: 600; }
+  .topbar .ticker .pill {
+    display: inline-block; padding: 1px 6px; margin-left: 6px;
+    border: 1px solid var(--accent-dim); color: var(--accent);
+    border-radius: 2px; font-size: 9px; letter-spacing: 1px;
+  }
+
+  /* Bottom nav bar */
+  .botbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    background: var(--bg-darker); border-top: 2px solid var(--header-bg);
+    padding: 8px 18px; font-family: ui-monospace, monospace; font-size: 11px;
+    display: flex; justify-content: space-between; align-items: center;
+    color: var(--muted);
+  }
+  .botbar .progress {
+    flex: 1; height: 2px; background: var(--border); margin: 0 24px;
+    position: relative;
+  }
+  .botbar .progress .fill {
+    height: 100%; background: var(--accent); transition: width 0.3s ease;
+  }
+  .botbar .counter { color: var(--value); min-width: 56px; }
+  .botbar .hint { color: var(--muted); }
+  .botbar .hint kbd {
+    background: var(--panel); padding: 1px 5px; border: 1px solid var(--border);
+    border-radius: 2px; font-size: 10px; color: var(--label-dim);
+  }
+
+  /* Slide container */
+  .deck { position: relative; height: 100vh; padding-top: 38px; padding-bottom: 38px; }
+  section.slide {
+    position: absolute; top: 38px; left: 0; right: 0; bottom: 38px;
+    padding: 36px 64px;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  section.slide.active { display: flex; }
+
+  @media (max-width: 768px) {
+    section.slide { padding: 28px 24px; }
+  }
+
+  /* Slide header (number + title) */
+  .slide-num {
+    color: var(--label); font-family: ui-monospace, monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .slide-title {
+    color: var(--text-bright); font-size: 36px; font-weight: 600; line-height: 1.15;
+    margin-bottom: 24px;
+  }
+  .slide-subtitle {
+    color: var(--muted); font-size: 16px; margin-top: -16px; margin-bottom: 24px;
+    max-width: 880px;
+  }
+
+  /* Common text blocks */
+  .slide p { color: var(--text); font-size: 16px; line-height: 1.55; max-width: 900px; margin-bottom: 14px; }
+  .slide p.big { font-size: 22px; line-height: 1.4; max-width: 880px; }
+  .slide strong { color: var(--text-bright); }
+  .slide em { color: var(--label-dim); font-style: normal; }
+  .slide code {
+    background: var(--bg-darker); color: var(--value); padding: 1px 6px;
+    font-family: ui-monospace, monospace; font-size: 0.92em; border-radius: 2px;
+  }
+  .slide a {
+    color: var(--value); text-decoration: none;
+    border-bottom: 1px dotted var(--border);
+  }
+  .slide a:hover { color: var(--value-bright); border-bottom-color: var(--value-bright); }
+
+  /* Pre formula blocks */
+  .formula-block {
+    background: var(--panel-2); border-left: 2px solid var(--accent);
+    padding: 14px 18px; font-family: ui-monospace, monospace; font-size: 14px;
+    color: var(--text-bright); margin: 12px 0; overflow-x: auto; white-space: pre;
+  }
+
+  /* Two/three column layouts */
+  .cols-2, .cols-3 { display: grid; gap: 24px; margin-top: 12px; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 900px) {
+    .cols-2, .cols-3 { grid-template-columns: 1fr; }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--panel); border-left: 2px solid var(--header-bg);
+    padding: 18px 22px;
+  }
+  .card-label {
+    color: var(--label); font-family: ui-monospace, monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;
+  }
+  .card-value {
+    color: var(--value-bright); font-family: ui-monospace, monospace;
+    font-size: 24px; font-weight: 600; margin-bottom: 10px;
+  }
+  .card-desc { color: var(--text); font-size: 14px; line-height: 1.5; }
+
+  /* Tables */
+  table.t {
+    width: 100%; border-collapse: collapse; background: var(--panel);
+    font-family: ui-monospace, monospace; font-size: 13px;
+    margin-top: 8px;
+  }
+  table.t th, table.t td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-soft); }
+  table.t th {
+    background: var(--bg-darker); color: var(--label); font-weight: 600;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.t .val      { color: var(--value-bright); }
+  table.t .muted    { color: var(--muted); }
+  table.t .accent   { color: var(--accent); }
+  table.t .warn     { color: var(--warn); }
+  table.t .danger   { color: var(--danger); }
+  table.t .strike   { text-decoration: line-through; color: var(--muted); }
+
+  /* Big stat blocks */
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 18px; margin-top: 18px;
+  }
+  .stat { background: var(--panel); padding: 18px 20px; border-bottom: 1px solid var(--border); }
+  .stat .label { color: var(--label); font-family: ui-monospace, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .stat .num { color: var(--value-bright); font-family: ui-monospace, monospace; font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 6px; }
+  .stat .sub { color: var(--muted); font-size: 11px; font-family: ui-monospace, monospace; }
+
+  /* Title slide special */
+  .title-slide {
+    justify-content: center; align-items: flex-start;
+    padding-left: 80px;
+  }
+  .title-slide .hero-num { font-size: 11px; color: var(--label); letter-spacing: 2px; margin-bottom: 14px; }
+  .title-slide h1 {
+    font-size: 64px; color: var(--text-bright); font-weight: 700; line-height: 1.05;
+    margin-bottom: 18px;
+  }
+  .title-slide h1 .accent { color: var(--accent); }
+  .title-slide .tagline { font-size: 22px; color: var(--label); max-width: 800px; margin-bottom: 28px; }
+  .title-slide .url {
+    font-family: ui-monospace, monospace; font-size: 16px; color: var(--value);
+    margin-bottom: 18px;
+  }
+  .title-slide .badges {
+    display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px;
+  }
+  .title-slide .badge {
+    border: 1px solid var(--accent-dim); color: var(--accent);
+    padding: 4px 12px; font-family: ui-monospace, monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 1px; border-radius: 2px;
+  }
+  .title-slide .badge.warn { color: var(--warn); border-color: var(--warn); }
+  .title-slide .badge.label { color: var(--label); border-color: var(--label-dim); }
+
+  /* Quote / pull-text */
+  .pullquote {
+    border-left: 3px solid var(--accent); padding: 4px 18px; margin: 18px 0;
+    color: var(--text-bright); font-size: 20px; font-style: italic; max-width: 880px;
+  }
+
+  /* List blocks with icons */
+  ul.checklist { list-style: none; padding: 0; }
+  ul.checklist li {
+    padding: 6px 0 6px 26px; position: relative; color: var(--text); font-size: 15px;
+  }
+  ul.checklist li::before {
+    content: "✓"; position: absolute; left: 0; top: 5px; color: var(--accent);
+    font-family: ui-monospace, monospace;
+  }
+  ul.checklist li.x::before { content: "✗"; color: var(--danger); }
+  ul.checklist li.pending::before { content: "○"; color: var(--warn); }
+  ul.checklist li strong { color: var(--text-bright); }
+
+  /* Closing CTA */
+  .cta-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px; margin-top: 18px;
+  }
+  .cta {
+    background: var(--panel); padding: 18px 20px; border-left: 2px solid var(--accent-dim);
+    text-decoration: none; display: block;
+  }
+  .cta:hover { background: var(--panel-2); border-left-color: var(--accent); }
+  .cta .ctype { color: var(--label); font-family: ui-monospace, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .cta .ctitle { color: var(--value-bright); font-size: 16px; font-family: ui-monospace, monospace; margin-bottom: 4px; }
+  .cta .cdesc { color: var(--muted); font-size: 12px; }
+
+  /* Inline pills */
+  .pill {
+    display: inline-block; padding: 1px 8px;
+    border: 1px solid var(--accent-dim); color: var(--accent); border-radius: 2px;
+    font-family: ui-monospace, monospace; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; margin-right: 4px;
+  }
+  .pill.warn { color: var(--warn); border-color: var(--warn); }
+  .pill.danger { color: var(--danger); border-color: var(--danger); }
+  .pill.label { color: var(--label); border-color: var(--label-dim); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="left">
+    <a href="/">regimeshift.xyz</a>
+    <span style="color: var(--border)">/</span>
+    <span style="color: var(--text); margin-left: 10px;">deck · pitch</span>
+  </div>
+  <div class="ticker">
+    AGENTSOFR.USD <span class="v">4.34%</span>
+    <span class="pill">LIVE · Base mainnet · V4</span>
+  </div>
+</div>
+
+<div class="deck">
+
+<!-- ═══ SLIDE 1 — TITLE ═══ -->
+<section class="slide title-slide active" id="slide-1">
+  <div class="hero-num">[ 1 / 11 ] · REGIMESHIFT CLEARINGHOUSE</div>
+  <h1>The AI central bank<br>for the <span class="accent">agent economy</span>.</h1>
+  <div class="tagline">A decentralized benchmark rate, a regime-aware matcher, and an on-chain settlement contract — purpose-built for autonomous agents borrowing and lending on Base mainnet.</div>
+  <div class="url">→ regimeshift.xyz · live now</div>
+  <div class="badges">
+    <span class="badge">V4 deployed</span>
+    <span class="badge">3 audit rounds · 0 findings</span>
+    <span class="badge label">7-source Agent-SOFR</span>
+    <span class="badge warn">Agora Agents · RFB 04</span>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 2 — THE PROBLEM ═══ -->
+<section class="slide" id="slide-2">
+  <div class="slide-num">[ 2 / 11 ] · THE PROBLEM</div>
+  <div class="slide-title">DeFi's rate primitives weren't built for agents.</div>
+  <div class="slide-subtitle">Existing rate signals are all flawed for autonomous agents that act in minutes-to-hours, not days-to-weeks.</div>
+
+  <table class="t">
+    <thead>
+      <tr><th>Existing signal</th><th>Why it fails for agents</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Aave / Compound borrow rates</strong></td><td class="muted">Governance-set, multi-week LTV timelock, reflexive incentives → manipulation risk</td></tr>
+      <tr><td><strong>Fed Funds / SOFR</strong></td><td class="muted">Off-chain, no real-time integration with on-chain settlement</td></tr>
+      <tr><td><strong>Chainlink price feeds</strong></td><td class="muted">Centralized oracle network, no rate primitive, no signing for repo settlement</td></tr>
+      <tr><td><strong>Single-exchange perp funding</strong></td><td class="muted">Venue-specific manipulation possible, no cross-source robustness</td></tr>
+    </tbody>
+  </table>
+
+  <p class="big" style="margin-top: 28px;">Agents need <strong>market-derived rates</strong>, <strong>minute-scale horizons</strong>, and <strong>bilateral on-chain settlement</strong> — none of which DeFi 1.0 provides.</p>
+</section>
+
+<!-- ═══ SLIDE 3 — WHY NOW ═══ -->
+<section class="slide" id="slide-3">
+  <div class="slide-num">[ 3 / 11 ] · WHY NOW</div>
+  <div class="slide-title">The machine economy is here. It just can't borrow yet.</div>
+  <div class="slide-subtitle">Machines already dominate on-chain activity — but it's extractive: MEV, arbitrage, volume farming. The transition underway is to productive agent commerce — and agents that create value need working capital.</div>
+
+  <div class="cols-2" style="margin-top: 8px;">
+    <div>
+      <div class="card-label" style="margin-bottom: 10px;">Productive agent commerce needs four primitives</div>
+      <ul class="checklist">
+        <li><strong>Payments</strong> — x402, MPP · live, ~75M tx in 30 days</li>
+        <li><strong>Wallets</strong> — Coinbase AgentKit, Safe · live</li>
+        <li><strong>Marketplaces</strong> — Olas Mech Bazaar · live, 12.7M agent-to-agent tx</li>
+        <li class="x"><strong>Credit / capital markets</strong> — nobody. Agents can pay; they can't borrow.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="card-label" style="margin-bottom: 10px;">Four independent sources confirm the gap</div>
+      <ul class="checklist">
+        <li>Keyrock <em>"Who Pays The Agent?"</em> — names the extractive→productive transition; no credit primitive in the stack</li>
+        <li>agentpaymentsstack.com — 6-layer market map (L0–L5), zero credit layer</li>
+        <li>Tempo MPP Hackathon — 43 projects shipped, only 4 in DeFi / Trading</li>
+        <li>Olas — 554 daily-active agents, 12.7M payments, zero credit between them</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="pullquote" style="margin-top: 20px;">The binding constraint is no longer technology — settlement is sub-second, fees sub-cent. It is <strong>trust</strong>: verifiable methodology, audit trails, receipt-visible settlement. That is exactly what RegimeShift is built around.</p>
+</section>
+
+<!-- ═══ SLIDE 4 — THE PRODUCT ═══ -->
+<section class="slide" id="slide-4">
+  <div class="slide-num">[ 4 / 11 ] · THE PRODUCT</div>
+  <div class="slide-title">Three integrated layers, one stack.</div>
+
+  <div class="cols-3" style="margin-top: 18px;">
+    <div class="card">
+      <div class="card-label">Layer 1 · Index</div>
+      <div class="card-value">Agent-SOFR</div>
+      <div class="card-desc">
+        Decentralized USD short-rate benchmark. Weighted median of <strong>7 sources</strong>
+        (Deribit options PCP, HL funding, Aevo, Deribit basis, Aave USDC, Compound USDC, NY Fed SOFR).
+        Refreshed every 60s. Black-Cox variance premium + 6-mode regime adjustment.
+        Paid endpoint: <code>$0.10</code> per call.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Layer 2 · Matcher</div>
+      <div class="card-value">Clearinghouse</div>
+      <div class="card-desc">
+        Off-chain RFQ engine that pairs lender ↔ borrower intents,
+        signs EIP-712 quotes ready for on-chain settlement.
+        Webhook or long-poll match notifications. Intent endpoints free
+        (revenue from rate + settlement-anchor consumption).
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Layer 3 · Settlement</div>
+      <div class="card-value">InterAgentRepoV4</div>
+      <div class="card-desc">
+        On-chain escrow contract on Base mainnet (<code>0x9d3b…b31c</code>).
+        <code>originate()</code> / <code>repay()</code> / <code>liquidate()</code> / <code>defaultLoan()</code>.
+        Chainlink-driven pre-expiry liquidation. Aave-style default split.
+        <strong>3 audit rounds, 0 findings outstanding</strong>.
+      </div>
+    </div>
+  </div>
+
+  <div class="formula-block" style="margin-top: 28px;">agent_sofr(asset, horizon) = base_anchor + variance_premium + regime_adjustment
+                          ↑ 7-source         ↑ Black-Cox        ↑ 6-mode ladder
+                            weighted           first-passage      0/5/15/30/60/200 bps
+                            median             (cv + λ·j²)</div>
+</section>
+
+<!-- ═══ SLIDE 5 — LIVE PROOF ═══ -->
+<section class="slide" id="slide-5">
+  <div class="slide-num">[ 5 / 11 ] · LIVE PROOF</div>
+  <div class="slide-title">Real loans, real wallets, real on-chain settlement.</div>
+  <div class="slide-subtitle">Not a testnet demo, not a slide-deck mockup — every loan below is signed, originated, and settled on Base mainnet, with tx hashes verifiable on BaseScan.</div>
+
+  <table class="t">
+    <thead>
+      <tr><th>Loan ID</th><th>Status</th><th>Borrower</th><th>Lender</th><th>Principal</th><th>Rate</th><th>Originate</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>0xd3ad…2e95</code></td>
+        <td><span class="pill">REPAID</span></td>
+        <td class="muted">0x9C08…e221</td>
+        <td class="muted">0x3d6E…e8b5</td>
+        <td class="val">$0.50</td>
+        <td class="val">480 bps</td>
+        <td class="muted"><a target="_blank" href="https://basescan.org/tx/0xdf8967ce5ce8dd61d60b4736cfdc9c6d7de86450d0a3c59c02b80070f68e639b">basescan ↗</a></td>
+      </tr>
+      <tr>
+        <td><code>0xbee2…23a8</code></td>
+        <td><span class="pill">REPAID</span></td>
+        <td class="muted">0xA44D…80FA</td>
+        <td class="muted">0x696c…eA2d</td>
+        <td class="val">$0.55</td>
+        <td class="val">492 bps</td>
+        <td class="muted"><a target="_blank" href="https://basescan.org/tx/0x49c32593fc711667f0b9192f0401b14ba570f4cf67b3864b141522c87fb854a7">basescan ↗</a></td>
+      </tr>
+      <tr>
+        <td><code>0xf782…e111</code></td>
+        <td><span class="pill warn">ACTIVE</span></td>
+        <td class="muted">0x696c…eA2d</td>
+        <td class="muted">0x9C08…e221</td>
+        <td class="val">$0.65</td>
+        <td class="val">525 bps</td>
+        <td class="muted">…</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cols-2" style="margin-top: 28px;">
+    <div>
+      <p><strong>Live Loan Registry</strong> (section 1 on regimeshift.xyz): every loan reconstructed
+      from V4 event logs, auto-refreshed every 30s. Click any address or tx hash → BaseScan.</p>
+    </div>
+    <div>
+      <p><strong>Open Order Book</strong> (section 2): waiting lender + borrower intents from
+      3 demo wallets. Update every 15s. Anyone can match against them by submitting a
+      compatible intent.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SLIDE 6 — DIFFERENTIATION ═══ -->
+<section class="slide" id="slide-6">
+  <div class="slide-num">[ 6 / 11 ] · DIFFERENTIATION</div>
+  <div class="slide-title">Why Aave / Morpho can't do this.</div>
+
+  <table class="t">
+    <thead>
+      <tr><th>Property</th><th>Aave V3</th><th>Morpho Blue</th><th>RegimeShift</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Rate origin</td>
+        <td class="muted">Pool utilization curve, governance params</td>
+        <td class="muted">Per-market governance</td>
+        <td class="accent">Live 7-source weighted median</td>
+      </tr>
+      <tr>
+        <td>LTV adjustment cadence</td>
+        <td class="muted">Multi-week timelock vote</td>
+        <td class="muted">Per-market governance</td>
+        <td class="accent">Per-block (regime-aware)</td>
+      </tr>
+      <tr>
+        <td>Calm-market LTV (RESTING)</td>
+        <td class="muted">80% (static)</td>
+        <td class="muted">~80% (per-market)</td>
+        <td class="accent">92% (+12% efficiency)</td>
+      </tr>
+      <tr>
+        <td>Stress-market LTV (HIGH)</td>
+        <td class="muted">80% (static)</td>
+        <td class="muted">~80%</td>
+        <td class="warn">70% (−10%, lender-safer)</td>
+      </tr>
+      <tr>
+        <td>Minimum loan duration</td>
+        <td class="muted">N/A (pool, indefinite)</td>
+        <td class="muted">N/A (pool)</td>
+        <td class="accent">120s (agent-scale)</td>
+      </tr>
+      <tr>
+        <td>Settlement model</td>
+        <td class="muted">Shared pool with cascade risk</td>
+        <td class="muted">Isolated per-market pools</td>
+        <td class="accent">Bilateral atomic, no cascade</td>
+      </tr>
+      <tr>
+        <td>Methodology transparency</td>
+        <td class="muted">DAO forum threads</td>
+        <td class="muted">Per-market params on-chain</td>
+        <td class="accent">SHA-256 + IPFS-pinned spec</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="pullquote" style="margin-top: 24px;">In RESTING / LOW / NORMAL regimes (78% of the time), borrowers free up <strong>6-13% more capital</strong> vs Aave's static model. In HIGH / EXTREME (8%), <strong>lenders get materially better protection</strong>. Aave can't capture either side — they can only optimize for the average regime.</p>
+</section>
+
+<!-- ═══ SLIDE 7 — METHODOLOGY CREDIBILITY ═══ -->
+<section class="slide" id="slide-7">
+  <div class="slide-num">[ 7 / 11 ] · METHODOLOGY CREDIBILITY</div>
+  <div class="slide-title">Spec-driven, content-hashed, audit-cleared.</div>
+  <div class="slide-subtitle">We don't ship vibes. Every paid rate API response includes an immutable hash of the methodology that produced it.</div>
+
+  <ul class="checklist" style="margin-top: 20px;">
+    <li><strong>Barndorff-Nielsen–Shephard jump decomposition</strong> — canonical econometric method (bipower variation + tripower quarticity + Huang-Tauchen Z-statistic). Same math as production ARMSHookV3 Uniswap v4 hook.</li>
+    <li><strong>4.2 years of Binance ETH/USDC 1-second tickers</strong> aggregated to 444,219 5-minute bars. Not a hand-picked window — the full dataset.</li>
+    <li><strong>Closed-form λ identification</strong> — solved so total fee revenue covers impermanent loss with 5% margin. λ = 1.0968, rounded to 1.097 in production. Sensitivity-checked at λ ∈ {0.50…2.00}.</li>
+    <li><strong>3 audit rounds, 0 findings outstanding</strong>: R1 fixed initial-LTV cap + min duration + rate ceiling + Aave-style default. R2 removed griefing pause vector. R3 retired V3 cleanly.</li>
+    <li><strong>Triple integrity lock</strong> on the methodology page: SHA-256 baked into the API constant, deployed HTML page, AND IPFS-pinned (CID <code>bafkreiaadxkh…dimz7m</code>) — anyone can verify all three independently.</li>
+  </ul>
+
+  <div class="formula-block" style="margin-top: 24px;">$ curl https://regimeshift.xyz/methodology/agent-sofr-v1 | shasum -a 256
+  → 001dd476c5e14755617200899b1f7f1de4a6d54050c7eb3f6ffb3988c1a199fb
+
+$ curl -H 'Accept: application/vnd.ipld.raw' \
+       https://ipfs.io/ipfs/bafkreiaadxkhnrpbi5kwc4qargnr67y54stnkqcqy7vt6373hgemdimz7m \
+       | shasum -a 256
+  → 001dd476c5e14755617200899b1f7f1de4a6d54050c7eb3f6ffb3988c1a199fb
+
+→ same hash. tamper-evident across HTTPS, IPFS, and the API itself.</div>
+</section>
+
+<!-- ═══ SLIDE 8 — PRICING + TRACTION ═══ -->
+<section class="slide" id="slide-8">
+  <div class="slide-num">[ 8 / 11 ] · PRICING & TRACTION</div>
+  <div class="slide-title">Priced to the real market — and honest about its stage.</div>
+
+  <div class="cols-2" style="margin-top: 18px;">
+    <div>
+      <h3 style="color: var(--label); font-family: ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;">Paid x402 endpoints</h3>
+      <table class="t">
+        <tbody>
+          <tr><td><code>GET /v1/asset/eth/vrp</code></td><td class="val">$0.005</td></tr>
+          <tr><td><code>GET /v1/asset/btc/vrp</code></td><td class="val">$0.005</td></tr>
+          <tr><td><code>GET /v1/rate/sofr/usd</code></td><td class="val">$0.10</td></tr>
+          <tr><td><code>GET /v1/risk/max-ltv</code></td><td class="val">$0.005</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size: 13px; color: var(--muted); margin-top: 14px;">Agent-SOFR is the <strong style="color:var(--text-bright)">$0.10 Messari-tier product</strong> — no other DeFi protocol publishes a canonical USD short-rate benchmark for agents. VRP + max-LTV are commodity signal tier ($0.005). x402 paywall on Base, CDP facilitator.</p>
+    </div>
+    <div>
+      <h3 style="color: var(--label); font-family: ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;">Traction — discovery &gt; conversion, by design of the stage</h3>
+      <div class="stat-grid" style="grid-template-columns: 1fr 1fr; margin-top: 0;">
+        <div class="stat">
+          <div class="label">x402 challenges issued</div>
+          <div class="num">1,037</div>
+          <div class="sub">Endpoints indexed + probed by Bazaar / agentic.market discovery crawlers</div>
+        </div>
+        <div class="stat">
+          <div class="label">Paid settlements</div>
+          <div class="num">7</div>
+          <div class="sub">Real USDC paid for data — genuine conversions, not crawler traffic</div>
+        </div>
+        <div class="stat">
+          <div class="label">Loans on V4</div>
+          <div class="num">5</div>
+          <div class="sub">End-to-end originate → repay, all on Base mainnet</div>
+        </div>
+        <div class="stat">
+          <div class="label">Agent wallets live</div>
+          <div class="num">3</div>
+          <div class="sub">Auto-posting intents + matching via the activity bot</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top: 22px;">Honest read: in x402, every purchase begins with a 402 challenge — it is the protocol handshake, not a failed sale. Most of the 1,037 are discovery crawlers cataloguing the service; 7 are genuine paid conversions. That ratio is normal for the stage — organic x402 volume across the <em>entire</em> ecosystem is ~$28K/day (Keyrock, 2026). We are priced and built for the real market, not a fantasy TAM.</p>
+</section>
+
+<!-- ═══ SLIDE 9 — QUICKSTART ═══ -->
+<section class="slide" id="slide-9">
+  <div class="slide-num">[ 9 / 11 ] · QUICKSTART</div>
+  <div class="slide-title">Three commands to become an agent.</div>
+  <div class="slide-subtitle">The agent starter kit is public, MIT-licensed, ~600 lines of readable Python. Four built-in roles: lender, borrower, liquidator, data_only.</div>
+
+  <div class="formula-block" style="margin-top: 14px;"><span style="color: var(--muted);"># requires Python 3.10+ and an EVM wallet with ~$10 of ETH/USDC/WETH on Base</span>
+git clone https://github.com/tradingdesk26/regimeshift-agent-starter
+cd regimeshift-agent-starter
+pip install -r requirements.txt
+
+<span style="color: var(--muted);"># edit config.toml — paste private key, choose role, set budget</span>
+cp config.toml.example config.toml
+python -m starter_agent</div>
+
+  <p style="margin-top: 22px;">Output of the default lender role:</p>
+
+  <div class="formula-block">[INFO 14:23:01Z] RegimeShift agent starter — role=lender, budget=$1.0
+[STEP 1] Approving USDC → V4 (no-op if already done)
+[INFO 14:23:01Z] Strategy: min_rate=480 bps, max_duration=3600s
+[STEP 2] Posting lender intent: $1.0 USDC @ ≥480 bps for ≤3600s
+[STEP 3] Long-polling for match (up to 60s)…
+[INFO 14:23:08Z]    ✓ Matched! match_id=match_xyz789 (elapsed 7.2s)
+[STEP 4] Calling V4.originate(quote, sig)…
+[INFO 14:23:14Z]    originate tx: https://basescan.org/tx/0xdf89…
+[INFO 14:23:15Z] ✓ Loan opened. loan_id = 0xd3ad…</div>
+
+  <p style="margin-top: 22px;">Strategy hooks (<code>decide_min_rate_bps</code>, <code>decide_collateral_amount</code>, etc.) at the top of each role file. Replace with your own logic — leave the lifecycle plumbing alone.</p>
+</section>
+
+<!-- ═══ SLIDE 10 — ROADMAP ═══ -->
+<section class="slide" id="slide-10">
+  <div class="slide-num">[ 10 / 11 ] · ROADMAP</div>
+  <div class="slide-title">What ships next.</div>
+
+  <table class="t" style="margin-top: 14px;">
+    <thead>
+      <tr><th>Milestone</th><th>What it unlocks</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Distribution — Olas Mech Marketplace</strong></td>
+        <td class="muted">Agent-SOFR + loan-quote wrapped as Olas Mechs → discoverable by 554 daily-active agents already paying each other 12.7M+ times. Mech is a Gnosis-side discovery/payment shell proxying to the Base API; lending settlement stays on V4.</td>
+        <td><span class="pill warn">Q3 2026</span></td>
+      </tr>
+      <tr>
+        <td><strong>v1.1 — EUR, ETH variants of Agent-SOFR</strong></td>
+        <td class="muted">FX-cross USD → EUR rate; ETH cost-of-carry rate for ETH-denominated loans</td>
+        <td><span class="pill warn">Q3 2026</span></td>
+      </tr>
+      <tr>
+        <td><strong>v1.2 — Multi-collateral</strong></td>
+        <td class="muted">BTC, stablecoin pairs, LP tokens as collateral (re-calibrate regime per asset)</td>
+        <td><span class="pill warn">Q3 2026</span></td>
+      </tr>
+      <tr>
+        <td><strong>v2.0 — Composable rate primitive</strong></td>
+        <td class="muted">Agent-SOFR consumed on-chain by other protocols (yield aggregators, structured products)</td>
+        <td><span class="pill label">Q4 2026</span></td>
+      </tr>
+      <tr>
+        <td><strong>v2.1 — Decentralized oracle committee</strong></td>
+        <td class="muted">Multi-signer Agent-SOFR with stake-weighted aggregation, slashable misbehavior</td>
+        <td><span class="pill label">Q1 2027</span></td>
+      </tr>
+      <tr>
+        <td><strong>v3.0 — Cross-chain settlement</strong></td>
+        <td class="muted">Same matcher serves quotes for Arbitrum, Optimism, Solana — single source of truth for the agent rate</td>
+        <td><span class="pill label">2027</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top: 28px;">Path-to-value: <strong>own the rate primitive</strong> agents trust. Once Agent-SOFR is the default benchmark, every agent-native protocol consuming USD short-rate routes through us — like SOFR for TradFi or LIBOR before that, but priced per-call, settled on-chain.</p>
+
+  <p style="margin-top: 12px; color: var(--muted); font-size: 14px;">Distribution wedge: agent payments already work at scale (Olas: 12.7M agent-to-agent transactions) — but no network has a <strong style="color: var(--text-bright);">credit layer</strong>. The agent-payments stack maps 6 layers, none for borrowing. We meet that demand where the agents already are, then pull settlement onto V4.</p>
+</section>
+
+<!-- ═══ SLIDE 11 — CLOSING ═══ -->
+<section class="slide" id="slide-11">
+  <div class="slide-num">[ 11 / 11 ] · GET STARTED</div>
+  <div class="slide-title">Try it now. Live on Base mainnet.</div>
+
+  <div class="cta-grid">
+    <a class="cta" href="https://regimeshift.xyz" target="_blank">
+      <div class="ctype">→ Landing</div>
+      <div class="ctitle">regimeshift.xyz</div>
+      <div class="cdesc">Loan Registry + Open Order Book + live Index Details</div>
+    </a>
+    <a class="cta" href="https://regimeshift.xyz/methodology/agent-sofr-v1" target="_blank">
+      <div class="ctype">→ Methodology</div>
+      <div class="ctitle">agent-sofr-v1</div>
+      <div class="cdesc">Full formal spec · SHA-256 + IPFS-pinned</div>
+    </a>
+    <a class="cta" href="https://github.com/tradingdesk26/regimeshift-agent-starter" target="_blank">
+      <div class="ctype">→ Code (MIT)</div>
+      <div class="ctitle">regimeshift-agent-starter</div>
+      <div class="cdesc">Clone → fund → python -m starter_agent</div>
+    </a>
+    <a class="cta" href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c" target="_blank">
+      <div class="ctype">→ Contract</div>
+      <div class="ctitle">InterAgentRepoV4</div>
+      <div class="cdesc">0x9d3b…b31c on Base mainnet</div>
+    </a>
+  </div>
+
+  <p style="margin-top: 32px;" class="big">
+    Built for <a href="https://agora.canteen.app" target="_blank">Agora Agents Hackathon</a> · RFB 04
+    <span style="color: var(--muted)"> · submission week of 2026-05-25</span>
+  </p>
+
+  <p style="color: var(--muted); margin-top: 14px;">
+    Author: tradingdesk26 · The Hague · Buy-side options analyst by day,
+    agent infrastructure builder by night. Open to collaborators + early integrators.
+  </p>
+
+  <p style="color: var(--muted); margin-top: 18px; font-size: 12px; font-family: ui-monospace, monospace;">
+    Market sources: Keyrock Research <em>"Who Pays The Agent?"</em> (2026) ·
+    agentpaymentsstack.com (6-layer market map) ·
+    Olas Mech Marketplace (agent activity data) ·
+    Tempo MPP Hackathon project gallery.
+  </p>
+</section>
+
+</div>  <!-- /deck -->
+
+<div class="botbar">
+  <div class="counter"><span id="cur">1</span> / <span id="total">10</span></div>
+  <div class="progress"><div class="fill" id="progress-fill" style="width: 10%"></div></div>
+  <div class="hint"><kbd>←</kbd> <kbd>→</kbd> nav · <kbd>1</kbd>-<kbd>9</kbd> jump · <kbd>F</kbd> fullscreen</div>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('section.slide');
+  const total  = slides.length;
+  let current  = 1;
+
+  document.getElementById('total').textContent = total;
+
+  function show(n) {
+    n = Math.max(1, Math.min(total, n));
+    current = n;
+    slides.forEach((s, i) => s.classList.toggle('active', i === n - 1));
+    document.getElementById('cur').textContent = n;
+    document.getElementById('progress-fill').style.width = (n / total * 100) + '%';
+    history.replaceState(null, '', '#slide-' + n);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(current + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(current - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); show(1); }
+    else if (e.key === 'End') { e.preventDefault(); show(total); }
+    else if (e.key >= '1' && e.key <= '9') { show(parseInt(e.key, 10)); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  // Click on slide background advances (excluding links)
+  document.addEventListener('click', e => {
+    if (e.target.closest('a, button, kbd')) return;
+    show(current + 1);
+  });
+
+  // Deep-link via hash
+  const match = location.hash.match(/^#slide-(\d+)$/);
+  if (match) show(parseInt(match[1], 10));
+</script>
+
+</body>
+</html>
