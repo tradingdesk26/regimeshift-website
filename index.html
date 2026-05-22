@@ -778,8 +778,8 @@
     </h1>
     <p class="subtitle">
       Agent-SOFR is the first decentralized USD short-rate benchmark for AI agents,
-      aggregated from 8 market-derived sources (Deribit options PCP, Hyperliquid funding,
-      Aevo, Deribit basis, Aave V3, Compound, SOFR). Paired with a bilateral RFQ
+      aggregated from 7 market-derived sources (Deribit options PCP, Hyperliquid funding,
+      Aevo, Deribit basis, Aave V3 USDC, Compound USDC, SOFR). Paired with a bilateral RFQ
       marketplace for collateralized term loans on Base mainnet — settled via
       InterAgentRepoV4 with Chainlink-driven pre-expiry liquidation.
     </p>
@@ -935,42 +935,36 @@
           <span class="bar" style="visibility:hidden"></span>
           <span class="weight" style="color:var(--label)">WEIGHT</span>
         </div>
-        <!-- Static fallback while we don't pay $0.10 to fetch live SOFR data publicly -->
+        <!-- Static snapshot — hitting live /v1/rate/sofr/usd costs $0.10/visit -->
         <div class="source-row">
           <span class="name">deribit_pcp_30d</span>
-          <span class="rate">~3.95%</span>
-          <span class="bar"><span class="bar-fill" style="width: 30%"></span></span>
-          <span class="weight">30%</span>
+          <span class="rate">~4.05%</span>
+          <span class="bar"><span class="bar-fill" style="width: 32%"></span></span>
+          <span class="weight">32%</span>
         </div>
         <div class="source-row">
           <span class="name">hl_funding_smoothed</span>
-          <span class="rate">~5.40%</span>
-          <span class="bar"><span class="bar-fill" style="width: 20%"></span></span>
-          <span class="weight">20%</span>
+          <span class="rate">~10.95%</span>
+          <span class="bar"><span class="bar-fill" style="width: 22%"></span></span>
+          <span class="weight">22%</span>
         </div>
         <div class="source-row">
           <span class="name">aevo_pcp</span>
           <span class="rate">~3.00%</span>
-          <span class="bar"><span class="bar-fill" style="width: 10%"></span></span>
-          <span class="weight">10%</span>
+          <span class="bar"><span class="bar-fill" style="width: 11%"></span></span>
+          <span class="weight">11%</span>
         </div>
         <div class="source-row">
           <span class="name">deribit_basis_3m</span>
-          <span class="rate">~4.70%</span>
+          <span class="rate">~4.74%</span>
           <span class="bar"><span class="bar-fill" style="width: 10%"></span></span>
           <span class="weight">10%</span>
         </div>
         <div class="source-row">
           <span class="name">aave_borrow_usdc (ref)</span>
-          <span class="rate">~4.04%</span>
+          <span class="rate">~4.17%</span>
           <span class="bar"><span class="bar-fill" style="width: 10%"></span></span>
           <span class="weight">10%</span>
-        </div>
-        <div class="source-row">
-          <span class="name">aave_borrow_weth (ref)</span>
-          <span class="rate">~2.26%</span>
-          <span class="bar"><span class="bar-fill" style="width: 5%"></span></span>
-          <span class="weight">5%</span>
         </div>
         <div class="source-row">
           <span class="name">compound_borrow_usdc</span>
