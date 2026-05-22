@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repo Pricing v1 — Methodology · RegimeShift Clearinghouse</title>
+<meta name="description" content="How an Agent-SOFR rate becomes a signed EIP-712 loan quote: rate decomposition, LTV cap derivation, default split, EIP-712 schema.">
+<style>
+  :root {
+    --bg:#0a0e14;--bg-darker:#060a0f;--panel:#0e1419;--panel-2:#131a22;
+    --border:#1f2937;--border-soft:#1a242f;
+    --label:#e6a14b;--label-dim:#b8843e;
+    --value:#6ed4c7;--value-bright:#8aebde;
+    --header-bg:#1f3d3d;--header-fg:#d4a06a;
+    --text:#d1d5db;--text-bright:#f3f4f6;--muted:#6b7280;
+    --accent:#10b981;--accent-dim:#047857;
+    --warn:#f59e0b;--danger:#ef4444;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; line-height: 1.55; }
+  .topbar { background: var(--bg-darker); border-bottom: 2px solid var(--header-bg); padding: 10px 16px; font-family: ui-monospace, monospace; font-size: 12px; }
+  .topbar .inner { max-width: 980px; margin: 0 auto; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .topbar a { color: var(--label); text-decoration: none; }
+  .topbar a:hover { color: var(--value-bright); }
+  .topbar .breadcrumb { color: var(--muted); }
+  .topbar .breadcrumb .sep { margin: 0 6px; color: var(--border); }
+  .topbar .right { color: var(--value); }
+  .container { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  .hero { padding: 40px 16px 24px; border-bottom: 1px solid var(--border); }
+  .hero .doc-id { color: var(--label); font-family: ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
+  .hero h1 { color: var(--text-bright); font-size: 32px; margin: 6px 0 12px; font-weight: 600; }
+  .hero .subtitle { color: var(--muted); font-size: 14px; max-width: 700px; }
+  .hero .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 24px; margin-top: 22px; font-family: ui-monospace, monospace; font-size: 12px; }
+  .hero .meta-grid .field { color: var(--label); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+  .hero .meta-grid .value { color: var(--value); }
+  .section-header { background: var(--header-bg); color: var(--header-fg); padding: 8px 16px; font-family: ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-top: 32px; }
+  .section-header .num { color: var(--label); margin-right: 10px; }
+  .panel { background: var(--panel); padding: 18px 18px; border-bottom: 1px solid var(--border); }
+  .panel p { margin: 0 0 12px; }
+  .panel p:last-child { margin-bottom: 0; }
+  .panel strong { color: var(--text-bright); }
+  pre { background: var(--bg-darker); border: 1px solid var(--border); padding: 14px 16px; font-family: ui-monospace, monospace; font-size: 12px; color: var(--value); overflow-x: auto; margin: 12px 0; line-height: 1.5; }
+  pre .c { color: var(--muted); }
+  pre .k { color: var(--label); }
+  pre .v { color: var(--value-bright); }
+  pre .s { color: var(--accent); }
+  code.inline { background: var(--bg-darker); color: var(--value); padding: 1px 6px; font-family: ui-monospace, monospace; font-size: 12px; border-radius: 2px; }
+  table.t { width: 100%; border-collapse: collapse; background: var(--panel); font-family: ui-monospace, monospace; font-size: 12px; margin: 8px 0; }
+  table.t th, table.t td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border-soft); }
+  table.t th { background: var(--bg-darker); color: var(--label); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+  table.t .val { color: var(--value-bright); }
+  table.t .muted { color: var(--muted); }
+  table.t .accent { color: var(--accent); }
+  table.t .warn { color: var(--warn); }
+  table.t .danger { color: var(--danger); }
+  a.ext { color: var(--value); text-decoration: none; border-bottom: 1px dotted var(--border); }
+  a.ext:hover { color: var(--value-bright); border-bottom-color: var(--value-bright); }
+  .formula { background: var(--panel-2); border-left: 2px solid var(--accent); padding: 14px 18px; font-family: ui-monospace, monospace; font-size: 13px; color: var(--text-bright); margin: 12px 0; overflow-x: auto; white-space: pre; }
+  .integrity { background: var(--bg-darker); border-top: 2px solid var(--header-bg); padding: 22px 16px; font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); margin-top: 40px; }
+  .integrity .inner { max-width: 980px; margin: 0 auto; }
+  .integrity .field { color: var(--label); display: inline-block; min-width: 130px; }
+  .integrity .hash { color: var(--value); word-break: break-all; }
+  .integrity a { color: var(--value); text-decoration: none; }
+  .pill { display: inline-block; padding: 1px 8px; font-family: ui-monospace, monospace; font-size: 10px; border: 1px solid var(--accent-dim); color: var(--accent); border-radius: 2px; text-transform: uppercase; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="inner">
+    <div class="breadcrumb">
+      <a href="/">regimeshift.xyz</a>
+      <span class="sep">/</span>
+      <a href="/methodology/">methodology</a>
+      <span class="sep">/</span>
+      <span style="color: var(--text)">repo-pricing-v1</span>
+    </div>
+    <div class="right">spec v1 · immutable</div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="hero">
+  <div class="doc-id">DOC :: REPO-PRICING-V1 · METHODOLOGY · REGIMESHIFT CLEARINGHOUSE</div>
+  <h1>Repo pricing — from Agent-SOFR to signed loan quote</h1>
+  <div class="subtitle">
+    How an Agent-SOFR rate becomes a specific, EIP-712-signed, on-chain-settleable loan quote. Covers per-LTV variance premium, regime LTV caps, the matcher's quote-construction algorithm, and the Aave-style default split.
+  </div>
+  <div class="meta-grid">
+    <div><span class="field">Version</span><span class="value">v1 (2026-05-22)</span></div>
+    <div><span class="field">Status</span><span class="value"><span class="pill">Production</span></span></div>
+    <div><span class="field">Settlement contract</span><span class="value">InterAgentRepoV4 · Base mainnet</span></div>
+    <div><span class="field">Audit status</span><span class="value">3 rounds · 0 findings outstanding</span></div>
+    <div><span class="field">Builds on</span><span class="value"><a class="ext" href="/methodology/agent-sofr-v1">agent-sofr-v1</a></span></div>
+    <div><span class="field">Source</span><span class="value"><a class="ext" target="_blank" rel="noopener" href="https://github.com/tradingdesk26/regimeshift-clearinghouse/blob/main/matcher/quote_engine.py">matcher/quote_engine.py</a></span></div>
+  </div>
+</div>
+
+<div class="section-header"><span class="num">1)</span> The quote-rate formula</div>
+<div class="panel">
+  <p>A loan quote rate combines four components. The first three are loan-agnostic (snapshot of the Agent-SOFR oracle state); the fourth is the matcher's flat fee.</p>
+
+  <div class="formula">quote_rate_bps =
+    base_anchor_bps                       // from agent-sofr-v1, section 2
+  + variance_premium_bps(LTV, σ_T, T)     // per-loan, see section 2 below
+  + regime_premium_bps(regime)            // from agent-sofr-v1, section 4
+  + ORCHESTRATOR_TAKE_BPS                 // flat 5 bps to matcher</div>
+
+  <p>Two of these terms (base anchor, regime premium) are <strong>identical to what the Agent-SOFR oracle publishes</strong> — they're not loan-specific. The variance premium is loan-specific because it depends on the loan's LTV and duration.</p>
+</div>
+
+<div class="section-header"><span class="num">2)</span> Per-loan variance premium</div>
+<div class="panel">
+  <p>Same Black-Cox first-passage formula as <a class="ext" href="/methodology/agent-sofr-v1">agent-sofr-v1 §3</a>, but with the loan's actual <code class="inline">LTV</code> and <code class="inline">duration_sec</code> plugged in (instead of the generic 80% / 1h used for the headline rate).</p>
+
+  <div class="formula">σ_T = √( (cv + λ·j²) · T )                  // T in 5-min bars
+z   = -ln(1/LTV) / σ_T
+P_default = Φ(z)                            // standard normal CDF
+variance_premium_bps = LTV · P_default · LGD · (BARS_PER_YEAR / T) · 10000
+              with LGD = 0.05</div>
+
+  <p>The matcher's <code class="inline">compute_collateral</code> mode does the inverse: given a target rate, find the LTV that produces it. Bisection on LTV against the equation above, clamped at the regime's max LTV cap.</p>
+</div>
+
+<div class="section-header"><span class="num">3)</span> Regime-dependent LTV caps</div>
+<div class="panel">
+  <p>Even when the math allows higher LTV, we cap by regime. Caps are tightened from initial v1 values after audit round 1 — a 3% absolute buffer below the contract's 95% liquidation threshold gives the matching engine wiggle room without ever generating quotes the contract would reject at origination.</p>
+
+  <table class="t">
+    <thead>
+      <tr><th>Regime</th><th>Max LTV (cap)</th><th>Aave static</th><th>Capital efficiency Δ</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>RESTING</td>  <td class="accent">92%</td>  <td class="muted">80%</td> <td class="val">+12%</td></tr>
+      <tr><td>LOW</td>      <td class="accent">90%</td>  <td class="muted">80%</td> <td class="val">+10%</td></tr>
+      <tr><td>NORMAL</td>   <td class="accent">85%</td>  <td class="muted">80%</td> <td class="val">+5%</td></tr>
+      <tr><td>ELEVATED</td> <td class="warn">80%</td>    <td class="muted">80%</td> <td class="muted">0% (parity)</td></tr>
+      <tr><td>HIGH</td>     <td class="warn">70%</td>    <td class="muted">80%</td> <td class="danger">−10% (safer for lenders)</td></tr>
+      <tr><td>EXTREME</td>  <td class="danger">55%</td>  <td class="muted">80%</td> <td class="danger">−25% (matching paused)</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top: 12px; color: var(--muted); font-size: 13px;">Weighted-average gain (using time-share weights from agent-sofr-v1): <strong style="color: var(--text-bright);">~8% capital efficiency improvement</strong> in calm markets, with materially better lender protection in shocks. Aave can't adapt because LTV requires a multi-week governance vote.</p>
+</div>
+
+<div class="section-header"><span class="num">4)</span> Loan-quote EIP-712 schema</div>
+<div class="panel">
+  <p>The matcher signs every quote with an EIP-712 typed-data signature. The contract's <code class="inline">originate()</code> verifies the signature with <code class="inline">ECDSA.recover</code> against the configured <code class="inline">oracleSigner</code> address. A quote is non-replayable across contract versions because the EIP-712 domain includes the version string.</p>
+
+  <pre><span class="k">EIP712Domain</span>:
+  <span class="s">name</span>:              <span class="v">"InterAgentRepo"</span>
+  <span class="s">version</span>:           <span class="v">"4"</span>                                  <span class="c">// V4 is the active deployment</span>
+  <span class="s">chainId</span>:           <span class="v">8453</span>                                  <span class="c">// Base mainnet</span>
+  <span class="s">verifyingContract</span>: <span class="v">"0x9d3b61d13a839968ffad94a0eedf73153c2fb31c"</span>
+
+<span class="k">Quote</span>:
+  <span class="s">borrower</span>:          <span class="k">address</span>
+  <span class="s">lender</span>:            <span class="k">address</span>
+  <span class="s">principalToken</span>:    <span class="k">address</span>                                <span class="c">// e.g. USDC</span>
+  <span class="s">principalAmount</span>:   <span class="k">uint256</span>                                <span class="c">// in native ERC-20 units</span>
+  <span class="s">collateralToken</span>:   <span class="k">address</span>                                <span class="c">// e.g. WETH</span>
+  <span class="s">collateralAmount</span>:  <span class="k">uint256</span>
+  <span class="s">expiryTimestamp</span>:   <span class="k">uint256</span>                                <span class="c">// loan must be repaid before this</span>
+  <span class="s">rateBps</span>:           <span class="k">uint256</span>                                <span class="c">// the rate computed above</span>
+  <span class="s">nonce</span>:             <span class="k">bytes32</span>                                <span class="c">// = loanId on chain</span></pre>
+
+  <p>The <code class="inline">nonce</code> doubles as the <code class="inline">loanId</code> in the contract's <code class="inline">loans</code> mapping — the matcher generates it from a hash of <code class="inline">(borrower, lender, expiryTimestamp, principalAmount)</code> so it's deterministic but unique per (counterparty, terms) tuple.</p>
+</div>
+
+<div class="section-header"><span class="num">5)</span> Settlement lifecycle</div>
+<div class="panel">
+  <p>Once both counterparties have approved their respective ERC-20s (USDC for lender, WETH for borrower), <strong>either party</strong> can submit the signed quote to <code class="inline">originate()</code>. The contract:</p>
+
+  <ol style="color: var(--text); margin: 0 0 12px 18px;">
+    <li>Verifies EIP-712 signature against <code class="inline">oracleSigner</code></li>
+    <li>Verifies <code class="inline">expiryTimestamp &gt; block.timestamp</code></li>
+    <li>Verifies initial LTV ≤ <strong>93%</strong> (R1-#1 post-audit on-chain check)</li>
+    <li>Verifies loan duration ≥ <strong>120s</strong> (R1-#2 post-audit)</li>
+    <li>Verifies <code class="inline">rateBps</code> ≤ ceiling (R1-#3 post-audit)</li>
+    <li>Pulls collateral from borrower, principal from lender to borrower</li>
+    <li>Records loan, emits <code class="inline">LoanOriginated</code> event</li>
+  </ol>
+
+  <p>From that point, three terminal states are possible:</p>
+
+  <table class="t">
+    <thead>
+      <tr><th>Terminal state</th><th>Trigger</th><th>Outcome</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Repaid</strong> <span class="pill">happy path</span></td>
+        <td>Borrower calls <code class="inline">repay(loanId)</code> before expiry</td>
+        <td>Principal + interest → lender. Full collateral → borrower.</td>
+      </tr>
+      <tr>
+        <td><strong>Liquidated</strong></td>
+        <td>Anyone calls <code class="inline">liquidate(loanId)</code> when on-chain LTV ≥ 95% (post-grace-period of 60s)</td>
+        <td>Aave-style split (see §6). Liquidator gets 3% bounty.</td>
+      </tr>
+      <tr>
+        <td><strong>Defaulted</strong></td>
+        <td>Anyone calls <code class="inline">defaultLoan(loanId)</code> after <code class="inline">expiryTimestamp</code> without repayment</td>
+        <td>Aave-style split (see §6). Caller gets 3% bounty.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section-header"><span class="num">6)</span> Default split — Aave-style fair distribution</div>
+<div class="panel">
+  <p>When a loan terminates via liquidation or expiry-default, the collateral is split four ways (introduced in audit R1-#4):</p>
+
+  <table class="t">
+    <thead>
+      <tr><th>Recipient</th><th>Share</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Liquidator / triggerer</td>     <td class="val">3% of collateral</td>      <td>Bounty incentivising decentralised liquidator competition</td></tr>
+      <tr><td>Insurance pool</td>             <td class="val">1% of collateral</td>      <td>Cross-loan loss buffer (separate contract address, rotatable)</td></tr>
+      <tr><td>Lender</td>                     <td class="val">debt-equivalent</td>       <td>principalAmount + accrued interest, denominated in collateral at Chainlink price</td></tr>
+      <tr><td>Borrower</td>                   <td class="val">remaining excess</td>     <td>If collateral &gt; debt + fees, excess refunded to borrower</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top: 12px;"><strong>Why this matters:</strong> in earlier versions (V1/V2), the entire collateral went to the lender on default. That was an over-pay to lenders that disincentivised borrowing. The Aave-style split (R1-#4 fix in V3+) makes the contract fair: lenders are made whole, the system gets a small reserve buffer, and the borrower gets back whatever's left after paying their debt.</p>
+</div>
+
+<div class="section-header"><span class="num">7)</span> On-chain invariants enforced post-audit</div>
+<div class="panel">
+  <p>The contract enforces these properties at the bytecode level. They're not just convention — every <code class="inline">originate()</code> reverts unless all hold:</p>
+
+  <table class="t">
+    <thead>
+      <tr><th>Invariant</th><th>Enforced where</th><th>Audit finding addressed</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Initial LTV ≤ 93%</td>                    <td>originate()</td>           <td>R1-#1</td></tr>
+      <tr><td>Loan duration ≥ 120s</td>                  <td>originate()</td>           <td>R1-#2</td></tr>
+      <tr><td>rateBps ≤ sanity ceiling</td>             <td>originate()</td>           <td>R1-#3</td></tr>
+      <tr><td>Aave-style default split (not lender-takes-all)</td> <td>defaultLoan() / liquidate()</td> <td>R1-#4</td></tr>
+      <tr><td>repay() is NOT pausable (owner can't grief borrower into default)</td> <td>Pausable mixin scope</td> <td>R2-#2</td></tr>
+      <tr><td>Chainlink price feed staleness ≤ 1h</td>  <td>liquidate()</td>           <td>R1-#5 (heartbeat check)</td></tr>
+      <tr><td>Grace period 60s after origination before liquidate allowed</td> <td>liquidate()</td> <td>(anti-flash-loan)</td></tr>
+      <tr><td>EIP-712 domain version = "4"</td>         <td>originate() sig verify</td><td>Non-replayable across V1/V2/V3/V4</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top: 12px;">Full audit reports (round 1, 2, 3): <a class="ext" target="_blank" rel="noopener" href="https://github.com/tradingdesk26/regimeshift-clearinghouse/tree/main/audit">github.com/tradingdesk26/regimeshift-clearinghouse/tree/main/audit</a>. Outstanding findings: <strong>0</strong>. Retired contracts (V1/V2/V3): oracleSigner rotated to <code class="inline">0x...dEaD</code> on-chain.</p>
+</div>
+
+</div>
+
+<div class="integrity">
+  <div class="inner">
+    <div><span class="field">Methodology version</span> <span class="hash">repo-pricing-v1</span></div>
+    <div><span class="field">Last revised</span> <span class="hash">2026-05-22</span></div>
+    <div><span class="field">Source repo</span> <a href="https://github.com/tradingdesk26/regimeshift-clearinghouse">tradingdesk26/regimeshift-clearinghouse</a></div>
+    <div><span class="field">Active contract</span> <a href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c">InterAgentRepoV4</a> on Base</div>
+    <div><span class="field">Content hash</span> <span class="hash">see /methodology/HASHES.txt</span></div>
+    <div style="margin-top: 12px;"><span class="field">Verify integrity</span> <span style="color: var(--text)">curl https://regimeshift.xyz/methodology/repo-pricing-v1.html | shasum -a 256</span></div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Methodology — RegimeShift Clearinghouse</title>
+<meta name="description" content="Immutable methodology specifications for Agent-SOFR and Repo Pricing. Versioned, content-hashed, reproducible from first principles.">
+<style>
+  :root {
+    --bg:#0a0e14;--bg-darker:#060a0f;--panel:#0e1419;--panel-2:#131a22;
+    --border:#1f2937;--border-soft:#1a242f;
+    --label:#e6a14b;--label-dim:#b8843e;
+    --value:#6ed4c7;--value-bright:#8aebde;
+    --header-bg:#1f3d3d;--header-fg:#d4a06a;
+    --text:#d1d5db;--text-bright:#f3f4f6;--muted:#6b7280;
+    --accent:#10b981;--accent-dim:#047857;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; line-height: 1.55; }
+  .topbar { background: var(--bg-darker); border-bottom: 2px solid var(--header-bg); padding: 10px 16px; font-family: ui-monospace, monospace; font-size: 12px; }
+  .topbar .inner { max-width: 980px; margin: 0 auto; display: flex; justify-content: space-between; gap: 16px; }
+  .topbar a { color: var(--label); text-decoration: none; }
+  .topbar a:hover { color: var(--value-bright); }
+  .topbar .breadcrumb { color: var(--muted); }
+  .topbar .breadcrumb .sep { margin: 0 6px; color: var(--border); }
+  .topbar .right { color: var(--value); }
+  .container { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  .hero { padding: 40px 16px 24px; border-bottom: 1px solid var(--border); }
+  .hero h1 { color: var(--text-bright); font-size: 32px; margin: 6px 0 12px; font-weight: 600; }
+  .hero .subtitle { color: var(--muted); font-size: 14px; max-width: 700px; }
+  .section-header { background: var(--header-bg); color: var(--header-fg); padding: 8px 16px; font-family: ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-top: 32px; }
+  .section-header .num { color: var(--label); margin-right: 10px; }
+  .doc-card { background: var(--panel); padding: 20px 22px; border-bottom: 1px solid var(--border); }
+  .doc-card .doc-link { color: var(--value-bright); font-size: 18px; font-weight: 600; text-decoration: none; font-family: ui-monospace, monospace; }
+  .doc-card .doc-link:hover { color: var(--value); }
+  .doc-card .meta { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 12px; }
+  .doc-card .meta .pill { display: inline-block; padding: 1px 8px; border: 1px solid var(--accent-dim); color: var(--accent); border-radius: 2px; margin-left: 6px; text-transform: uppercase; letter-spacing: 1px; }
+  .doc-card .desc { color: var(--text); margin-bottom: 10px; }
+  .doc-card .sections { color: var(--muted); font-family: ui-monospace, monospace; font-size: 12px; }
+  .doc-card .sections span { color: var(--label-dim); margin-right: 16px; }
+  table.t { width: 100%; border-collapse: collapse; background: var(--panel); font-family: ui-monospace, monospace; font-size: 11px; margin: 0; }
+  table.t th, table.t td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border-soft); }
+  table.t th { background: var(--bg-darker); color: var(--label); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  table.t a { color: var(--value); text-decoration: none; }
+  table.t a:hover { color: var(--value-bright); }
+  .hash-cell { color: var(--value); word-break: break-all; max-width: 480px; }
+  .integrity { background: var(--bg-darker); border-top: 2px solid var(--header-bg); padding: 22px 16px; font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); margin-top: 40px; }
+  .integrity .inner { max-width: 980px; margin: 0 auto; }
+  .integrity p { margin: 8px 0; }
+  .integrity a { color: var(--value); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="inner">
+    <div class="breadcrumb">
+      <a href="/">regimeshift.xyz</a>
+      <span class="sep">/</span>
+      <span style="color: var(--text)">methodology</span>
+    </div>
+    <div class="right">spec index</div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="hero">
+  <h1>Methodology — versioned specs</h1>
+  <div class="subtitle">
+    Every paid endpoint published by RegimeShift Clearinghouse references one or more of the methodology documents below. Each is content-hashed and immutable — the version string in any API response resolves to a specific page that anyone can re-derive from first principles.
+  </div>
+</div>
+
+<div class="section-header"><span class="num">1)</span> Active specifications</div>
+
+<div class="doc-card">
+  <a class="doc-link" href="/methodology/agent-sofr-v1">agent-sofr-v1</a>
+  <span style="color: var(--muted); margin-left: 6px;">· Formal spec of the Agent-SOFR USD rate.</span>
+  <div class="meta">v1.0.1 · 2026-05-22 · <span class="pill">Production</span></div>
+  <div class="desc">
+    The 7-source weighted median + variance premium (Black-Cox) + 6-mode regime ladder. Drives the <code>/v1/rate/sofr/usd</code> endpoint ($0.10 per call) and the matcher's base anchor.
+  </div>
+  <div class="sections">
+    <span>1) Decomposition</span> <span>2) Source weights</span> <span>3) Variance premium</span> <span>4) Regime ladder</span> <span>5) Manipulation resistance</span> <span>6) Worked example</span> <span>7) Live verification</span>
+  </div>
+</div>
+
+<div class="doc-card">
+  <a class="doc-link" href="/methodology/repo-pricing-v1">repo-pricing-v1</a>
+  <span style="color: var(--muted); margin-left: 6px;">· How a rate becomes a signed loan quote.</span>
+  <div class="meta">v1 · 2026-05-22 · <span class="pill">Production</span></div>
+  <div class="desc">
+    EIP-712 quote schema, per-loan variance premium, regime-dependent LTV caps, Aave-style default split, settlement lifecycle. Builds on agent-sofr-v1. Implemented in <code>InterAgentRepoV4</code> on Base mainnet.
+  </div>
+  <div class="sections">
+    <span>1) Quote rate</span> <span>2) Per-loan variance</span> <span>3) LTV caps</span> <span>4) EIP-712 schema</span> <span>5) Lifecycle</span> <span>6) Default split</span> <span>7) On-chain invariants</span>
+  </div>
+</div>
+
+<div class="section-header"><span class="num">2)</span> Content integrity</div>
+<table class="t">
+  <thead>
+    <tr><th>Document</th><th>SHA-256</th></tr>
+  </thead>
+  <tbody id="hash-rows">
+    <tr><td colspan="2" style="color: var(--muted); text-align: center; padding: 16px;">Loading /methodology/HASHES.txt…</td></tr>
+  </tbody>
+</table>
+
+<div class="section-header"><span class="num">3)</span> Verifying a methodology hash yourself</div>
+<div class="doc-card">
+  <p>Every paid API response includes a <code>methodology.version</code> field — for example <code>"agent-sofr-v1"</code>. The version string resolves to a specific HTML page at <code>regimeshift.xyz/methodology/{version}</code>.</p>
+  <p>To verify a published rate was produced by the spec you think it was:</p>
+  <pre style="background: var(--bg-darker); border: 1px solid var(--border); padding: 14px 16px; font-family: ui-monospace, monospace; font-size: 12px; color: var(--value); overflow-x: auto;">curl https://regimeshift.xyz/methodology/agent-sofr-v1 | shasum -a 256
+curl https://regimeshift.xyz/methodology/HASHES.txt
+diff &lt;(curl https://regimeshift.xyz/methodology/agent-sofr-v1 | shasum -a 256 | awk '{print $1}') \
+     &lt;(curl -s https://regimeshift.xyz/methodology/HASHES.txt | grep agent-sofr-v1 | awk '{print $1}')</pre>
+  <p style="color: var(--muted); font-size: 13px;">If they match, the rate that came back labelled <code>"agent-sofr-v1"</code> was definitely produced by the spec you just read. If we ever change the formula we bump the version (<code>agent-sofr-v2</code>, etc.) — the old hash continues to resolve to this exact page.</p>
+</div>
+
+</div>
+
+<div class="integrity">
+  <div class="inner">
+    <p><strong style="color: var(--label);">Why versioning matters.</strong> Any methodology can drift if not versioned. By treating each spec as an immutable artifact + bumping the version string on every change, the consumer of a rate always has a verifiable source for "the formula that produced this number."</p>
+    <p><strong style="color: var(--label);">Live source code.</strong> The Python implementation that matches these specs is at <a href="https://github.com/tradingdesk26/regimeshift-clearinghouse">github.com/tradingdesk26/regimeshift-clearinghouse</a> — <code>oracle/agent_sofr.py</code>, <code>oracle/rate_aggregator.py</code>, <code>matcher/quote_engine.py</code>.</p>
+  </div>
+</div>
+
+<script>
+  // Pull HASHES.txt and render the table — same file we publish as integrity record
+  fetch('/methodology/HASHES.txt')
+    .then(r => r.ok ? r.text() : Promise.reject(r.status))
+    .then(txt => {
+      const rows = [];
+      txt.split('\n').forEach(line => {
+        const m = line.match(/^([a-f0-9]+)\s+(.+\.html)$/);
+        if (!m) return;
+        const filename = m[2].replace(/^.*\//, '');
+        const docname  = filename.replace(/\.html$/, '');
+        rows.push(
+          '<tr><td><a href="/methodology/' + docname + '">' + docname + '</a></td>' +
+          '<td class="hash-cell">' + m[1] + '</td></tr>'
+        );
+      });
+      document.getElementById('hash-rows').innerHTML =
+        rows.length ? rows.join('') :
+        '<tr><td colspan="2" style="color: var(--muted); text-align: center; padding: 16px;">HASHES.txt not found yet — first deploy in progress.</td></tr>';
+    })
+    .catch(e => {
+      document.getElementById('hash-rows').innerHTML =
+        '<tr><td colspan="2" style="color: var(--muted); text-align: center; padding: 16px;">HASHES.txt fetch failed.</td></tr>';
+    });
+</script>
+
+</body>
+</html>
