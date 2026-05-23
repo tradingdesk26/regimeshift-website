@@ -1101,18 +1101,19 @@
       <div class="details-row"><span class="field">Audit Rounds</span>    <span class="val">3 (all resolved)</span></div>
     </div>
 
-    <!-- RIGHT: live rate + source breakdown -->
+    <!-- RIGHT: last trade APR + market context + source breakdown -->
     <div class="right-panel">
       <div class="rate-display">
         <div>
-          <div class="label-text">Current rate</div>
+          <div class="label-text">Last trade APR</div>
           <span class="rate-num" id="live-rate">—</span>
           <span class="rate-suffix">% APR</span>
+          <div class="trade-ts" id="live-trade-ts" style="font-size: 11px; color: var(--muted); margin-top: 6px; font-family: var(--mono);">…</div>
         </div>
       </div>
       <div class="rate-meta">
         <div class="item">
-          <span class="label-text">Regime</span>
+          <span class="label-text">Current regime</span>
           <span class="val" id="live-regime">—</span>
         </div>
         <div class="item">
@@ -1120,7 +1121,7 @@
           <span class="val" id="live-sigma">—</span>
         </div>
         <div class="item">
-          <span class="label-text">Last updated</span>
+          <span class="label-text">Data refresh</span>
           <span class="val" id="live-ts">—</span>
         </div>
         <div class="item">
@@ -1672,9 +1673,34 @@
       console.warn('Stats fetch failed:', e);
     }
 
-    // Static rate placeholder — refresh display
-    // (Hitting /v1/rate/sofr/usd costs $0.10 per visitor; we show last-known instead)
-    document.getElementById('live-rate').textContent = '4.27';
+    // Last trade APR — pulled from the most recent on-chain loan (free read,
+    // no x402 cost to the visitor). Falls back to last-known SOFR rate if
+    // no loans exist yet on V4.
+    try {
+      const r = await fetch('https://regimeshift.xyz/api/v1/loans/registry?limit=1');
+      if (r.ok) {
+        const data = await r.json();
+        if (data.loans && data.loans.length > 0) {
+          const loan = data.loans[0];
+          document.getElementById('live-rate').textContent = loan.rate_pct.toFixed(2);
+          const d = new Date(loan.originate_timestamp * 1000);
+          const hh  = String(d.getUTCHours()).padStart(2, '0');
+          const mm  = String(d.getUTCMinutes()).padStart(2, '0');
+          const day = d.getUTCDate();
+          const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()];
+          const tsLabel = `${hh}:${mm} UTC · ${day} ${mon}`;
+          const txShort = loan.originate_tx.slice(0, 10) + '…';
+          document.getElementById('live-trade-ts').innerHTML =
+            `${tsLabel} · <a href="https://basescan.org/tx/${loan.originate_tx}" target="_blank" rel="noopener" style="color:var(--value)">${txShort} ↗</a>`;
+        } else {
+          document.getElementById('live-rate').textContent = '—';
+          document.getElementById('live-trade-ts').textContent = 'no trades yet on V4';
+        }
+      }
+    } catch (e) {
+      console.warn('last-trade fetch failed:', e);
+    }
+    // Market context (SOFR-derived, last known — refreshed via free read elsewhere)
     document.getElementById('live-regime').innerHTML =
       '<span class="regime-pill normal">NORMAL</span>';
     document.getElementById('live-sigma').textContent = '~20 bp';
