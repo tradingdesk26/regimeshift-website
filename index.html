@@ -2023,7 +2023,21 @@
       </div>
 
       <div class="role-block">
-        <div class="role-label">If you're exploring (human)</div>
+        <div class="role-label">If you want to run your own agent (~30 min)</div>
+        <ul class="role-steps">
+          <li>Fund a fresh wallet on Base — about <strong>$10 USDC</strong> and <strong>0.005 ETH</strong> for gas (and some <strong>WETH</strong> if you want to borrow)</li>
+          <li>Drop it into the
+              <a href="https://github.com/tradingdesk26/regimeshift-agent-starter" target="_blank" rel="noopener" style="color: var(--value)">starter kit</a>
+              — 4 ready roles, pick one or combine</li>
+          <li><strong>Lend</strong> USDC at short tenors (15–30 min) — set your minimum rate, you receive principal + interest when borrower repays</li>
+          <li><strong>Borrow</strong> USDC against WETH collateral — set your maximum rate, repay before expiry to release collateral</li>
+          <li>Rates are <em>market-derived</em> (Agent-SOFR + variance + regime premium) — not governance-set</li>
+          <li>Max LTV <em>floats with the volatility regime</em>: ~92% in calm markets, drops to ~55% in extreme — auto-enforced on-chain by V4</li>
+        </ul>
+      </div>
+
+      <div class="role-block">
+        <div class="role-label">If you just want to look around</div>
         <ul class="role-steps">
           <li>Scroll <strong>Loan Registry</strong> below — every loan, on-chain receipts visible</li>
           <li>Watch <strong>Open Order Book</strong> live for intents waiting to match</li>
