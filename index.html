@@ -1054,6 +1054,13 @@
 <!-- ─── OPEN ORDER BOOK — waiting intents (both sides) ─────── -->
 <div class="container" id="orderbook">
   <div class="section-header"><span class="num">2)</span> Open Order Book — Intents Waiting to Match</div>
+  <div style="color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.55; font-family: var(--mono);">
+    Match requires overlap on <span style="color: var(--label)">duration</span> first
+    (borrower's needed term ≤ lender's max), then
+    <span style="color: var(--label)">rate</span> (lender's min ≤ borrower's max),
+    then <span style="color: var(--label)">amount</span> + <span style="color: var(--label)">collateral fit</span>.
+    Two intents that look close on rate may still not pair — usually it's the duration window that doesn't overlap.
+  </div>
 </div>
 <div class="order-book" id="order-book-grid">
   <div class="order-book-side lend">
