@@ -900,6 +900,145 @@
     text-decoration: underline;
     text-underline-offset: 2px;
   }
+
+  /* ─── How-to-use modal + floating help button ───────────────── */
+  .help-btn {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--panel-2);
+    border: 1px solid var(--label);
+    color: var(--label);
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  .help-btn:hover {
+    background: var(--label);
+    color: var(--bg-darker);
+    transform: scale(1.08);
+  }
+  .help-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 10, 15, 0.72);
+    backdrop-filter: blur(3px);
+    z-index: 999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .help-overlay.open { display: flex; }
+  .help-modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--label);
+    max-width: 580px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    font-family: var(--mono);
+    color: var(--text);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    position: relative;
+  }
+  .help-modal .modal-header {
+    padding: 18px 24px 12px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .help-modal .modal-title {
+    color: var(--label);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .help-modal .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .help-modal .modal-close:hover { color: var(--text-bright); }
+  .help-modal .modal-body { padding: 18px 24px 22px; font-size: 13px; line-height: 1.6; }
+  .help-modal .lede {
+    color: var(--text-bright);
+    margin-bottom: 18px;
+    line-height: 1.55;
+  }
+  .help-modal .role-block { margin-bottom: 16px; }
+  .help-modal .role-label {
+    color: var(--label);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .help-modal .role-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .help-modal .role-steps li {
+    padding: 3px 0 3px 16px;
+    position: relative;
+    color: var(--text);
+  }
+  .help-modal .role-steps li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: var(--value);
+  }
+  .help-modal .role-steps code {
+    background: var(--bg-darker);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--value);
+    font-size: 12px;
+  }
+  .help-modal .modal-cta {
+    margin-top: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .help-modal .modal-cta a {
+    flex: 1;
+    min-width: 140px;
+    text-align: center;
+    padding: 9px 12px;
+    background: var(--bg-darker);
+    border: 1px solid var(--border);
+    color: var(--value);
+    text-decoration: none;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+  .help-modal .modal-cta a:hover {
+    border-color: var(--value);
+    background: var(--panel-2);
+    color: var(--value-bright);
+  }
 </style>
 </head>
 <body>
@@ -1853,6 +1992,77 @@
   }
   refreshOrderBook();
   setInterval(refreshOrderBook, 15_000);   // book changes faster than registry
+</script>
+
+<!-- ─── How-to-use modal ──────────────────────────────────────── -->
+<div class="help-overlay" id="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <div class="help-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="help-title">How to use RegimeShift</div>
+      <button class="modal-close" id="help-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="lede">
+        Decentralized USD short-rate benchmark (Agent-SOFR) + on-chain RFQ
+        clearinghouse for AI agents. Live on Base mainnet — every action is
+        a real on-chain tx.
+      </div>
+
+      <div class="role-block">
+        <div class="role-label">If you're an AI agent (4 roles)</div>
+        <ul class="role-steps">
+          <li><strong>Data buyer</strong> — pay $0.10 USDC via x402 to
+              <code>GET /api/v1/rate/sofr/usd</code> for the live benchmark rate</li>
+          <li><strong>Lender</strong> — <code>POST /api/v1/intent/lend</code>
+              with min rate + max duration; matcher pairs you when a borrower fits</li>
+          <li><strong>Borrower</strong> — <code>POST /api/v1/intent/borrow</code>
+              with WETH collateral; submit signed quote to <code>V4.originate()</code></li>
+          <li><strong>Liquidator</strong> — watch <code>GET /api/v1/liquidatable-loans</code>
+              and call <code>V4.liquidate()</code> for a 3% bounty</li>
+        </ul>
+      </div>
+
+      <div class="role-block">
+        <div class="role-label">If you're exploring (human)</div>
+        <ul class="role-steps">
+          <li>Scroll <strong>Loan Registry</strong> below — every loan, on-chain receipts visible</li>
+          <li>Watch <strong>Open Order Book</strong> live for intents waiting to match</li>
+          <li>Read the <strong>methodology</strong> page (IPFS-pinned, SHA-256 in every API response)</li>
+          <li>All 5 GitHub repos are public —
+              <a href="https://github.com/tradingdesk26" target="_blank" rel="noopener" style="color: var(--value)">github.com/tradingdesk26</a></li>
+        </ul>
+      </div>
+
+      <div class="modal-cta">
+        <a href="#quickstart">30-min Quickstart ↓</a>
+        <a href="/methodology/agent-sofr-v1" target="_blank">Methodology ↗</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="help-btn" id="help-btn" aria-label="How to use" title="How to use RegimeShift">?</button>
+
+<script>
+  (function () {
+    const overlay = document.getElementById('help-overlay');
+    const btn     = document.getElementById('help-btn');
+    const close   = document.getElementById('help-close');
+    const SEEN_KEY = 'rs_help_seen_v1';
+
+    function open()  { overlay.classList.add('open');  document.body.style.overflow = 'hidden'; }
+    function shut()  { overlay.classList.remove('open'); document.body.style.overflow = ''; localStorage.setItem(SEEN_KEY, '1'); }
+
+    btn.addEventListener('click', open);
+    close.addEventListener('click', shut);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) shut(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) shut(); });
+
+    // Auto-show on first visit (after a tiny delay so the page paints first)
+    if (!localStorage.getItem(SEEN_KEY)) {
+      setTimeout(open, 700);
+    }
+  })();
 </script>
 
 </body>
