@@ -2071,6 +2071,10 @@
     close.addEventListener('click', shut);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) shut(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) shut(); });
+    // Any link click inside the modal should close it first — both anchor
+    // jumps (#quickstart) and external links (target=_blank) — otherwise
+    // the overlay stays on top of the section the user just navigated to.
+    overlay.querySelectorAll('a').forEach((a) => a.addEventListener('click', shut));
 
     // Auto-show on first visit (after a tiny delay so the page paints first)
     if (!localStorage.getItem(SEEN_KEY)) {
