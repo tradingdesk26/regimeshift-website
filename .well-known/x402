@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "resources": [
+    "https://regimeshift.xyz/api/v1/rate/sofr/usd",
+    "https://regimeshift.xyz/api/v1/risk/max-ltv",
+    "https://regimeshift.xyz/api/v1/asset/eth/vrp",
+    "https://regimeshift.xyz/api/v1/asset/btc/vrp"
+  ],
+  "ownershipProofs": [
+    "0xa61877a7ba74666242e9985d81f29b3777638d67519c9cf777bb71ef36050e4b3a4945edf0f2112412104eea2a3d6a60e5d66a79d9869f4797a159b1fa6b17541c"
+  ]
+}
