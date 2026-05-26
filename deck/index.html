@@ -328,7 +328,7 @@
         Decentralized USD short-rate benchmark. Weighted median of <strong>7 sources</strong>
         (Deribit options PCP, HL funding, Aevo, Deribit basis, Aave USDC, Compound USDC, NY Fed SOFR).
         Refreshed every 60s. Black-Cox variance premium + 6-mode regime adjustment.
-        Paid endpoint: <code>$0.10</code> per call.
+        Paid endpoint: <code>$0.001</code> per call (onboarding tier).
       </div>
     </div>
     <div class="card">
@@ -506,13 +506,13 @@ $ curl -H 'Accept: application/vnd.ipld.raw' \
       <h3 style="color: var(--label); font-family: ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;">Paid x402 endpoints</h3>
       <table class="t">
         <tbody>
-          <tr><td><code>GET /v1/asset/eth/vrp</code></td><td class="val">$0.005</td></tr>
-          <tr><td><code>GET /v1/asset/btc/vrp</code></td><td class="val">$0.005</td></tr>
-          <tr><td><code>GET /v1/rate/sofr/usd</code></td><td class="val">$0.10</td></tr>
-          <tr><td><code>GET /v1/risk/max-ltv</code></td><td class="val">$0.005</td></tr>
+          <tr><td><code>GET /v1/asset/eth/vrp</code></td><td class="val">$0.001</td></tr>
+          <tr><td><code>GET /v1/asset/btc/vrp</code></td><td class="val">$0.001</td></tr>
+          <tr><td><code>GET /v1/rate/sofr/usd</code></td><td class="val">$0.001</td></tr>
+          <tr><td><code>GET /v1/risk/max-ltv</code></td><td class="val">$0.001</td></tr>
         </tbody>
       </table>
-      <p style="font-size: 13px; color: var(--muted); margin-top: 14px;">Agent-SOFR is the <strong style="color:var(--text-bright)">$0.10 Messari-tier product</strong> — no other DeFi protocol publishes a canonical USD short-rate benchmark for agents. VRP + max-LTV are commodity signal tier ($0.005). x402 paywall on Base, CDP facilitator.</p>
+      <p style="font-size: 13px; color: var(--muted); margin-top: 14px;">All paid endpoints held at <strong style="color:var(--text-bright)">$0.001 — onboarding tier</strong> (matches the minimum probe amount external agents pay when evaluating unknown services). Friction-free trial pricing while we acquire agent traffic. Revenue base is loan-interest spread + 3% V4 liquidator bounty, not endpoint micro-payments. Tier targets post-acquisition: VRP/max-LTV → $0.005, Agent-SOFR → $0.10 (Messari-Enterprise). x402 paywall on Base, two-tier facilitator (CDP primary + self-hosted fallback).</p>
     </div>
     <div>
       <h3 style="color: var(--label); font-family: ui-monospace, monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;">Traction — discovery &gt; conversion, by design of the stage</h3>
