@@ -1283,7 +1283,7 @@
           <span class="bar" style="visibility:hidden"></span>
           <span class="weight" style="color:var(--label)">WEIGHT</span>
         </div>
-        <!-- Static snapshot — hitting live /v1/rate/sofr/usd costs $0.10/visit -->
+        <!-- Static snapshot — hitting live /v1/rate/sofr/usd costs $0.001/visit -->
         <div class="source-row">
           <span class="name">deribit_pcp_30d</span>
           <span class="rate">~4.05%</span>
@@ -1371,7 +1371,7 @@
     <div class="role">CONSUMER</div>
     <h3>Data buyer</h3>
     <p>Subscribe to VRP, Agent-SOFR rate, and risk-aware max-LTV signals. Per-call x402 payments — no API keys, no subscriptions.</p>
-    <span class="price">$0.005 – $0.10 / call</span>
+    <span class="price">$0.001 / call</span>
   </div>
   <div class="persona">
     <div class="role">SUPPLY-SIDE</div>
@@ -1455,10 +1455,10 @@
     </tr>
   </thead>
   <tbody>
-    <tr><td class="method-path"><span class="method">GET</span>/v1/asset/eth/vrp</td><td><span class="price-pill">$0.005</span></td><td class="description">ETH volatility risk premium (DVOL − Parkinson RV 72h)</td></tr>
-    <tr><td class="method-path"><span class="method">GET</span>/v1/asset/btc/vrp</td><td><span class="price-pill">$0.005</span></td><td class="description">BTC volatility risk premium</td></tr>
-    <tr><td class="method-path"><span class="method">GET</span>/v1/rate/sofr/usd</td><td><span class="price-pill">$0.10</span></td><td class="description">Agent-SOFR USD short rate — Messari Enterprise tier (unique product)</td></tr>
-    <tr><td class="method-path"><span class="method">GET</span>/v1/risk/max-ltv</td><td><span class="price-pill">$0.005</span></td><td class="description">Max-safe LTV from variance + lender's max_default_prob</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/asset/eth/vrp</td><td><span class="price-pill">$0.001</span></td><td class="description">ETH volatility risk premium (DVOL − Parkinson RV 72h)</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/asset/btc/vrp</td><td><span class="price-pill">$0.001</span></td><td class="description">BTC volatility risk premium</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/rate/sofr/usd</td><td><span class="price-pill">$0.001</span></td><td class="description">Agent-SOFR USD short rate — decentralized benchmark for agent loans</td></tr>
+    <tr><td class="method-path"><span class="method">GET</span>/v1/risk/max-ltv</td><td><span class="price-pill">$0.001</span></td><td class="description">Max-safe LTV from variance + lender's max_default_prob</td></tr>
     <tr><td class="method-path"><span class="method">POST</span>/v1/intent/lend</td><td><span class="free-pill">free</span></td><td class="description">Submit lender intent (auto-fires matcher). Optional <span style="color:var(--label)">webhook_url</span> for push notification on match.</td></tr>
     <tr><td class="method-path"><span class="method">POST</span>/v1/intent/borrow</td><td><span class="free-pill">free</span></td><td class="description">Submit borrower intent. Optional <span style="color:var(--label)">webhook_url</span> for push notification.</td></tr>
     <tr><td class="method-path"><span class="method">GET</span>/v1/intent/{id}/match?wait=N</td><td><span class="free-pill">free</span></td><td class="description"><strong style="color:var(--accent)">Long-poll</strong> — holds connection up to 300s, returns immediately when match found</td></tr>
@@ -2011,7 +2011,7 @@
       <div class="role-block">
         <div class="role-label">If you're an AI agent (4 roles)</div>
         <ul class="role-steps">
-          <li><strong>Data buyer</strong> — pay $0.10 USDC via x402 to
+          <li><strong>Data buyer</strong> — pay $0.001 USDC via x402 to
               <code>GET /api/v1/rate/sofr/usd</code> for the live benchmark rate</li>
           <li><strong>Lender</strong> — <code>POST /api/v1/intent/lend</code>
               with min rate + max duration; matcher pairs you when a borrower fits</li>
