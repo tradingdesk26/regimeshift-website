@@ -1469,6 +1469,18 @@
   </tbody>
 </table>
 
+<!-- ─── MCP ACCESS ──────────────────────────────────────────── -->
+<div class="container" id="mcp">
+  <div class="section-header"><span class="num">M)</span> Also available over MCP</div>
+</div>
+<div class="quickstart-block">
+  <p style="color: var(--text); max-width: 880px; margin-top: 0;">
+    The same paid signals are exposed as a remote <a target="_blank" href="https://modelcontextprotocol.io">Model Context Protocol</a> server at
+    <code class="inline">mcp.regimeshift.xyz</code> — streamable-HTTP <code class="inline">/mcp</code> + SSE <code class="inline">/sse</code>, paid per-tool via x402 on Base.
+    Discoverable in the official <a target="_blank" href="https://registry.modelcontextprotocol.io">MCP Registry</a> as <code class="inline">xyz.regimeshift/mcp</code>.
+  </p>
+</div>
+
 <!-- ─── MATCH NOTIFICATIONS ────────────────────────────────── -->
 <div class="container" id="notify">
   <div class="section-header"><span class="num">N)</span> Match Notifications — No Polling Required</div>
@@ -1554,6 +1566,7 @@
     <a class="fn" href="/methodology/"><span class="key">METH</span>Methodology v1 (SHA-256 verified)</a>
     <a class="fn" href="#quickstart"><span class="key">QSTART</span>Fork template repo</a>
     <a class="fn" target="_blank" href="https://agentic.market/services/regimeshift-xyz"><span class="key">AMKT</span>Listed on agentic.market</a>
+    <a class="fn" target="_blank" href="https://mcp.regimeshift.xyz/"><span class="key">MCP</span>Remote MCP server</a>
     <a class="fn" target="_blank" href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c"><span class="key">CTRT</span>View V4 contract</a>
     <a class="fn" target="_blank" href="https://github.com/tradingdesk26/armsys-signals"><span class="key">SRC</span>Open source</a>
   </div>
@@ -1568,8 +1581,8 @@
     <a href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c">V4 contract</a>
     <a href="mailto:hi@regimeshift.xyz">Contact</a>
     <div class="built-for">
-      Built for the <a target="_blank" href="https://thecanteenapp.com/">Agora Agents Hackathon</a>
-      — Canteen × Circle. Reference customer:
+      Originally built for the <a target="_blank" href="https://thecanteenapp.com/">Agora Agents Hackathon</a>
+      — Canteen × Circle; now live in production on Base mainnet. Reference customer:
       <a target="_blank" href="https://github.com/tradingdesk26/vrp-agent">RegimeShift</a>
       autonomous portfolio agent.
     </div>
@@ -1586,10 +1599,10 @@
 
   // ─── Tier prices for revenue computation ───────────────────
   const TIER_PRICE_USD = {
-    '/api/v1/asset/eth/vrp':  0.005,
-    '/api/v1/asset/btc/vrp':  0.005,
-    '/api/v1/rate/sofr/usd':  0.10,
-    '/api/v1/risk/max-ltv':   0.005,
+    '/api/v1/asset/eth/vrp':  0.001,
+    '/api/v1/asset/btc/vrp':  0.001,
+    '/api/v1/rate/sofr/usd':  0.001,
+    '/api/v1/risk/max-ltv':   0.001,
   };
   const ENDPOINT_LABEL = {
     '/api/v1/asset/eth/vrp':  'ETH VRP',
