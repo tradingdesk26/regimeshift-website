@@ -900,6 +900,12 @@
     text-decoration: underline;
     text-underline-offset: 2px;
   }
+  footer a.x-link {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    margin-right: 0;
+  }
 
   /* ─── How-to-use modal + floating help button ───────────────── */
   .help-btn {
@@ -1047,13 +1053,14 @@
 <div class="terminal-bar">
   <div class="terminal-bar-inner">
     <div class="ticker-tab"><span class="ticker">AGENTSOFR</span> Rate</div>
+    <a class="nav-tab" href="/lend/" style="background:var(--accent);color:#04122b;font-weight:600"><span class="num">L)</span> Lend USDC</a>
     <a class="nav-tab" href="#methodology"><span class="num">M)</span> Methodology</a>
     <a class="nav-tab" href="#personas"><span class="num">R)</span> Roles</a>
     <a class="nav-tab" href="#quickstart"><span class="num">Q)</span> Quickstart</a>
     <a class="nav-tab" href="#endpoints"><span class="num">E)</span> Endpoints</a>
     <a class="nav-tab" href="#notify" style="background: var(--header-bg); color: var(--label);"><span class="num">N)</span> Notify</a>
-    <a class="nav-tab" href="#audit"><span class="num">A)</span> Audits</a>
-    <a class="nav-tab right" target="_blank" href="https://github.com/tradingdesk26/armsys-signals">GitHub →</a>
+    
+    <a class="nav-tab right" target="_blank" href="https://github.com/tradingdesk26/regimeshift-clearinghouse">GitHub →</a>
   </div>
 </div>
 
@@ -1244,7 +1251,7 @@
       <div class="details-row"><span class="field">Calibration</span>     <span class="val muted">4.2y ETH/USDC · 444k 5-min bars · BNS decomposition</span></div>
       <div class="details-row"><span class="field">Live Since</span>      <span class="val">2026-04-26</span></div>
       <div class="details-row"><span class="field">Active Contract</span> <span class="val mono"><a style="color:var(--value)" target="_blank" href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c">V4 0x9d3b…b31c</a></span></div>
-      <div class="details-row"><span class="field">Audit Rounds</span>    <span class="val">3 (all resolved)</span></div>
+      
     </div>
 
     <!-- RIGHT: last trade APR + market context + source breakdown -->
@@ -1533,33 +1540,6 @@
   <div class="activity-row"><span style="color: var(--muted)">Loading activity from /api/stats…</span></div>
 </div>
 
-<!-- ─── AUDIT TRAJECTORY ────────────────────────────────────── -->
-<div class="container" id="audit">
-  <div class="section-header"><span class="num">9)</span> Audit Trajectory — All Findings Resolved</div>
-</div>
-<div class="audit-strip">
-  <div class="audit-round">
-    <div class="label-text">Round 1</div>
-    <div class="count">10</div>
-    <div class="breakdown">4 HIGH + 3 MED + 3 LOW<br>→ V3 patches all</div>
-  </div>
-  <div class="audit-round">
-    <div class="label-text">→ Round 2</div>
-    <div class="count">3</div>
-    <div class="breakdown">2 MED + 1 LOW<br>→ V4 + V2 retired</div>
-  </div>
-  <div class="audit-round">
-    <div class="label-text">→ Round 3</div>
-    <div class="count">1</div>
-    <div class="breakdown">1 INFO<br>→ V3 retired</div>
-  </div>
-  <div class="audit-round resolved">
-    <div class="label-text">→ Outstanding</div>
-    <div class="count">0</div>
-    <div class="breakdown" style="color: var(--accent)">All resolved on-chain</div>
-  </div>
-</div>
-
 <!-- ─── BOTTOM FUNCTION BAR (Bloomberg-style) ───────────────── -->
 <div class="function-bar">
   <div class="inner">
@@ -1568,24 +1548,23 @@
     <a class="fn" target="_blank" href="https://agentic.market/services/regimeshift-xyz"><span class="key">AMKT</span>Listed on agentic.market</a>
     <a class="fn" target="_blank" href="https://mcp.regimeshift.xyz/"><span class="key">MCP</span>Remote MCP server</a>
     <a class="fn" target="_blank" href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c"><span class="key">CTRT</span>View V4 contract</a>
-    <a class="fn" target="_blank" href="https://github.com/tradingdesk26/armsys-signals"><span class="key">SRC</span>Open source</a>
+    <a class="fn" target="_blank" href="https://github.com/tradingdesk26/regimeshift-clearinghouse"><span class="key">SRC</span>Open source</a>
   </div>
 </div>
 
 <!-- ─── FOOTER ──────────────────────────────────────────────── -->
 <footer>
   <div class="inner">
-    <a href="https://github.com/tradingdesk26/armsys-signals">GitHub</a>
+    <a href="https://github.com/tradingdesk26/regimeshift-clearinghouse">GitHub</a>
     <a href="https://regimeshift.xyz/api/">API root</a>
     <a href="https://agentic.market/services/regimeshift-xyz">agentic.market</a>
     <a href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c">V4 contract</a>
-    <a href="mailto:hi@regimeshift.xyz">Contact</a>
-    <div class="built-for">
-      Originally built for the <a target="_blank" href="https://thecanteenapp.com/">Agora Agents Hackathon</a>
-      — Canteen × Circle; now live in production on Base mainnet. Reference customer:
-      <a target="_blank" href="https://github.com/tradingdesk26/vrp-agent">RegimeShift</a>
-      autonomous portfolio agent.
-    </div>
+    <a href="mailto:contact@regimeshift.xyz">contact@regimeshift.xyz</a>
+    <a class="x-link" target="_blank" rel="noopener" href="https://x.com/regimeshiftxyz" aria-label="RegimeShift on X (Twitter)" title="RegimeShift on X">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/>
+      </svg>
+    </a>
   </div>
 </footer>
 

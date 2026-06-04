@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RegimeShift — Lend USDC</title>
+<style>
+  :root { --bg:#0b0e14; --card:#131825; --fg:#e6edf3; --mut:#8b97a7; --ok:#3fb950; --warn:#d29922; --acc:#58a6ff; --line:#222b3a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap { max-width:540px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:22px; margin:0 0 2px; }
+  .sub { color:var(--mut); font-size:13px; margin:0 0 18px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin:12px 0; }
+  .card.resume { border-color:#2a6b34; background:#0f1a12; }
+  .row { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
+  .row .k { color:var(--mut); } .row .v { font-variant-numeric:tabular-nums; }
+  label { display:block; color:var(--mut); font-size:12px; margin:10px 0 4px; }
+  input,select { width:100%; background:#0d111a; border:1px solid var(--line); color:var(--fg); border-radius:8px; padding:10px; font-size:15px; }
+  button { width:100%; background:var(--acc); color:#04122b; border:0; border-radius:9px; padding:13px; font-size:15px; font-weight:600; cursor:pointer; margin-top:12px; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button.go { background:var(--ok); color:#03210c; }
+  .pill { display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--mut); }
+  .warn { background:#231a07; border:1px solid #5c4406; color:#e3b341; font-size:12.5px; padding:10px 12px; border-radius:9px; }
+  .ok { color:var(--ok); } .muted { color:var(--mut); }
+  #log { font:12px/1.45 ui-monospace,Menlo,monospace; white-space:pre-wrap; color:var(--mut); margin-top:10px; max-height:240px; overflow:auto; }
+  a { color:var(--acc); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>RegimeShift · Lend USDC</h1>
+  <p class="sub">Lend USDC into the inter-agent repo market on Base. You keep your keys — every action is signed in your own wallet. <span class="pill">Base · x402 · <a href="https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" target="_blank" style="color:inherit;text-decoration:underline">ERC-8004 #54435</a></span></p>
+
+  <div class="warn">⚠ Real money, early-stage software. Loans are over-collateralized in WETH and capped by the current volatility regime, but lenders can still lose principal if a collateral crash outruns liquidation. Start with $1. Counterparties today are largely RegimeShift's own demo agents.</div>
+
+  <div class="card" id="market">
+    <div class="row"><span class="k">Recent clearing rate</span><span class="v" id="m-rate">…</span></div>
+    <div class="row"><span class="k">Regime</span><span class="v" id="m-regime">…</span></div>
+    <div class="row"><span class="k">Open borrowers (demand)</span><span class="v" id="m-borrowers">…</span></div>
+    <div class="row"><span class="k">Best borrower rate now</span><span class="v" id="m-best">…</span></div>
+  </div>
+
+  <div class="card">
+    <button id="connect">Connect wallet</button>
+    <div id="acct" class="muted" style="margin-top:8px;display:none"></div>
+
+    <!-- Resume panel: shown if this wallet has a matched-but-unfinalized loan -->
+    <div id="resume" class="card resume" style="display:none">
+      <div style="font-weight:600;margin-bottom:6px">✓ You have a matched loan — finish it</div>
+      <div id="resume-detail" class="muted" style="font-size:13px"></div>
+      <button id="resume-btn" class="go">Sign to finalize loan</button>
+      <button id="resume-dismiss" class="alt" style="background:#1f2738;color:var(--fg)">Dismiss</button>
+    </div>
+
+    <div id="form" style="display:none">
+      <label>Amount to lend (USDC)</label>
+      <input id="amount" type="number" min="0.1" step="0.1" value="1" />
+      <label>Max loan duration (max 60 min)</label>
+      <select id="duration">
+        <option value="60">1 minute</option>
+        <option value="300">5 minutes</option>
+        <option value="900">15 minutes</option>
+        <option value="1800">30 minutes</option>
+        <option value="3600" selected>60 minutes (max)</option>
+      </select>
+      <label>Minimum rate you'll accept (bps) — lower = matches faster</label>
+      <input id="minrate" type="number" min="1" step="1" value="500" />
+      <button id="lend">Find best rate &amp; lend</button>
+      <div id="est" class="muted" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div id="log"></div>
+  <p class="sub" style="margin-top:16px">Verify on-chain: <a href="https://basescan.org/address/0x9d3b61d13a839968ffad94a0eedf73153c2fb31c" target="_blank">InterAgentRepoV4 contract</a> · ERC-8004 agent <a href="https://basescan.org/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" target="_blank">#54435</a> operated by <a href="https://basescan.org/address/0x8456bE7B0a576CE36F41Ae43231b08f04f744C8b" target="_blank">0x8456…C8b</a> · <a href="https://regimeshift.xyz" target="_blank">regimeshift.xyz</a><br><span class="muted">Security: 3 rounds of internal self-review (not a third-party audit). Early-stage — lend only what you can afford to lose.</span></p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
+<script>
+const API = "https://regimeshift.xyz/api";
+const V4   = "0x9d3b61d13a839968ffad94a0eedf73153c2fb31c";
+const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const CHAIN_ID = 8453, CHAIN_HEX = "0x2105";
+const LS_KEY = "rs_lend_pending";   // remembers the last intent so a late match can be finalized
+const ERC20_ABI = [
+  "function approve(address,uint256) returns (bool)",
+  "function allowance(address,address) view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)"
+];
+const V4_ABI = [
+  "function originate((address borrower,address lender,address principalToken,uint256 principalAmount,address collateralToken,uint256 collateralAmount,uint256 expiryTimestamp,uint256 rateBps,bytes32 nonce) q, bytes sig) returns (bytes32)"
+];
+
+const $ = id => document.getElementById(id);
+const log = (m, cls) => { const d=$("log"); d.innerHTML += (cls?`<span class="${cls}">`:"") + m + (cls?"</span>":"") + "\n"; d.scrollTop = d.scrollHeight; };
+let provider, signer, account;
+
+async function loadMarket() {
+  try {
+    const [mr, oi] = await Promise.all([
+      fetch(`${API}/v1/matches/recent?limit=8`).then(r=>r.json()),
+      fetch(`${API}/v1/intents/open`).then(r=>r.json()),
+    ]);
+    const rates = (mr.matches||[]).map(m=>+(m.quote?.quote?.rateBps)).filter(Boolean);
+    const regime = (mr.matches||[])[0]?.quote?.decomposition?.regime || "—";
+    const avg = rates.length ? Math.round(rates.reduce((a,b)=>a+b,0)/rates.length) : null;
+    const borrowers = oi.borrowers||[];
+    const best = borrowers.length ? Math.max(...borrowers.map(b=>+b.max_rate_bps||0)) : null;
+    $("m-rate").textContent = avg ? `~${avg} bps (${(avg/100).toFixed(2)}%/yr)` : "no recent matches";
+    $("m-regime").textContent = regime;
+    $("m-borrowers").textContent = `${borrowers.length} open`;
+    $("m-best").textContent = best ? `up to ${best} bps` : "—";
+    if (avg) $("minrate").value = Math.max(100, Math.round(avg*0.7));
+  } catch(e){ $("m-rate").textContent = "market unavailable"; }
+}
+
+// ── Fetch the signed quote for a match_id from the recent-matches feed ──────
+async function fetchQuote(matchId) {
+  const r = await fetch(`${API}/v1/matches/recent?limit=50`).then(x=>x.json());
+  const m = (r.matches||[]).find(x=>x.match_id===matchId);
+  return m ? m.quote : null;
+}
+
+// ── Originate (approve if needed + sign the loan). Shared by live flow + resume.
+async function originateQuote(payload, durSec) {
+  const q = payload.quote, sig = payload.signature, dec = payload.decomposition||{};
+  log(`  quote: rate ${q.rateBps} bps · LTV ${((dec.ltv||0)*100).toFixed(0)}% · regime ${dec.regime}`);
+  const principal = BigInt(q.principalAmount);
+  const usdc = new ethers.Contract(USDC, ERC20_ABI, signer);
+  const allow = await usdc.allowance(account, V4);
+  if (allow < principal) {
+    log("Approving USDC (sign in wallet)…");
+    const a = await usdc.approve(V4, principal); await a.wait(); log("  ✓ approved", "ok");
+  }
+  log("Originating loan — sign in wallet…");
+  const repo = new ethers.Contract(V4, V4_ABI, signer);
+  const tup = [q.borrower,q.lender,q.principalToken,BigInt(q.principalAmount),q.collateralToken,BigInt(q.collateralAmount),BigInt(q.expiryTimestamp),BigInt(q.rateBps),q.nonce];
+  const tx = await repo.originate(tup, sig);
+  log(`  tx ${tx.hash} — confirming…`);
+  const rc = await tx.wait();
+  if (rc.status === 1) {
+    log(`✓ LOAN OPENED. You lent $${(Number(q.principalAmount)/1e6).toFixed(4)} at ${q.rateBps} bps.`, "ok");
+    log(`  basescan: https://basescan.org/tx/${tx.hash}`);
+    localStorage.removeItem(LS_KEY);
+    $("resume").style.display = "none";
+    return true;
+  }
+  log("Transaction reverted.", "warn");
+  return false;
+}
+
+// ── On connect: if this wallet has a remembered intent that has since matched,
+//    surface a "finish it" panel (handles a match that arrived after the poll).
+async function checkPending() {
+  let p; try { p = JSON.parse(localStorage.getItem(LS_KEY)||"null"); } catch { p = null; }
+  if (!p || !p.intent_id || (p.wallet||"").toLowerCase() !== account.toLowerCase()) return;
+  try {
+    const r = await fetch(`${API}/v1/intent/${p.intent_id}/match?wait=3`).then(x=>x.json());
+    if (!r.matched) { log("Your earlier offer is still live, no borrower yet — leave this open or re-lend.", "muted"); return; }
+    const payload = await fetchQuote(r.match_id);
+    if (!payload) { log("A match was found earlier but its quote isn't retrievable right now — try again shortly.", "warn"); return; }
+    const q = payload.quote, dec = payload.decomposition||{};
+    $("resume-detail").innerHTML = `Lend $${(Number(q.principalAmount)/1e6).toFixed(2)} at <b>${q.rateBps} bps</b> · LTV ${((dec.ltv||0)*100).toFixed(0)}% · regime ${dec.regime}.<br>Found after you left — sign to open the loan.`;
+    $("resume").dataset.payload = JSON.stringify(payload);
+    $("resume").style.display = "block";
+    log("✓ A borrower matched your earlier offer — finish it above.", "ok");
+  } catch(e){ /* intent expired or gone — clear silently */ localStorage.removeItem(LS_KEY); }
+}
+
+$("resume-btn").onclick = async () => {
+  $("resume-btn").disabled = true;
+  try { await originateQuote(JSON.parse($("resume").dataset.payload), 3600); }
+  catch(e){ const msg=(e.shortMessage||e.message||""); log("Error: "+msg, "warn"); if(/already|exist|revert/i.test(msg)){ log("Looks like this loan was already finalized.","muted"); localStorage.removeItem(LS_KEY); $("resume").style.display="none"; } }
+  $("resume-btn").disabled = false;
+};
+$("resume-dismiss").onclick = () => { localStorage.removeItem(LS_KEY); $("resume").style.display="none"; };
+
+$("connect").onclick = async () => {
+  if (!window.ethereum) { log("No wallet found. Install MetaMask.", "warn"); return; }
+  provider = new ethers.BrowserProvider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  const net = await provider.getNetwork();
+  if (Number(net.chainId) !== CHAIN_ID) {
+    try { await window.ethereum.request({ method:"wallet_switchEthereumChain", params:[{chainId:CHAIN_HEX}] }); }
+    catch { log("Please switch your wallet to Base.", "warn"); return; }
+    provider = new ethers.BrowserProvider(window.ethereum);
+  }
+  signer = await provider.getSigner();
+  account = await signer.getAddress();
+  const usdc = new ethers.Contract(USDC, ERC20_ABI, provider);
+  const bal = await usdc.balanceOf(account);
+  $("connect").style.display = "none";
+  $("acct").style.display = "block";
+  $("acct").innerHTML = `Connected <b>${account.slice(0,6)}…${account.slice(-4)}</b> · USDC ${(Number(bal)/1e6).toFixed(2)}`;
+  $("form").style.display = "block";
+  checkPending();   // ← resume any matched-but-unfinalized loan
+};
+
+$("lend").onclick = async () => {
+  const lendBtn = $("lend"); lendBtn.disabled = true;
+  try {
+    const amount = parseFloat($("amount").value);
+    const dur = parseInt($("duration").value);
+    const minRate = parseInt($("minrate").value);
+    if (!(amount > 0)) { log("Enter an amount.", "warn"); lendBtn.disabled=false; return; }
+
+    log(`Posting lender intent: $${amount} USDC @ ≥${minRate} bps for ≤${dur}s …`);
+    const intent = await fetch(`${API}/v1/intent/lend`, {
+      method:"POST", headers:{"content-type":"application/json"},
+      body: JSON.stringify({ wallet: account, asset:"USDC", amount, min_rate_bps:minRate, max_duration_sec:dur, max_default_prob:0.001 })
+    }).then(r=>r.json());
+    if (!intent.intent_id) throw new Error("intent rejected: " + JSON.stringify(intent));
+    log(`  intent ${intent.intent_id}`);
+    // Remember it so a late match can be finalized on a return visit.
+    localStorage.setItem(LS_KEY, JSON.stringify({ intent_id: intent.intent_id, wallet: account }));
+
+    let matchId = intent.matched;
+    if (!matchId) {
+      log("Waiting for a borrower match (up to 60s)…");
+      const m = await fetch(`${API}/v1/intent/${intent.intent_id}/match?wait=60`).then(r=>r.json());
+      if (!m.matched) {
+        log("No match within 60s — your offer stays LIVE on the book.", "warn");
+        log("Come back to this page (same wallet) and it'll let you finish the moment a borrower appears.", "muted");
+        lendBtn.disabled=false; return;
+      }
+      matchId = m.match_id;
+    }
+    log(`  ✓ matched: ${matchId}`, "ok");
+
+    const payload = await fetchQuote(matchId);
+    if (!payload) throw new Error("match quote not found yet — reconnect to finish");
+    await originateQuote(payload, dur);
+  } catch(e) {
+    log("Error: " + (e.shortMessage || e.message || e), "warn");
+  }
+  lendBtn.disabled = false;
+};
+
+loadMarket();
+setInterval(loadMarket, 30000);
+</script>
+</body>
+</html>
