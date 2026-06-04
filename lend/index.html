@@ -113,66 +113,113 @@ async function loadMarket() {
   } catch(e){ $("m-rate").textContent = "market unavailable"; }
 }
 
-// ── Fetch the signed quote for a match_id from the recent-matches feed ──────
-async function fetchQuote(matchId) {
-  const r = await fetch(`${API}/v1/matches/recent?limit=50`).then(x=>x.json());
-  const m = (r.matches||[]).find(x=>x.match_id===matchId);
-  return m ? m.quote : null;
+// ── Per-intent set of match_ids already originated (survives page reloads) ───
+const sleep   = ms => new Promise(r => setTimeout(r, ms));
+const doneKey = id => "rs_lend_done_" + id;
+const getDone = id => { try { return new Set(JSON.parse(localStorage.getItem(doneKey(id))||"[]")); } catch { return new Set(); } };
+const addDone = (id, mid) => { const s = getDone(id); s.add(mid); localStorage.setItem(doneKey(id), JSON.stringify([...s])); };
+
+// ── Approve V4 to pull up to `totalUsdc` of USDC — one signature per order ───
+async function ensureAllowance(totalUsdc) {
+  const need = BigInt(Math.round(totalUsdc * 1e6));
+  const usdc = new ethers.Contract(USDC, ERC20_ABI, signer);
+  if (await usdc.allowance(account, V4) >= need) return;
+  log(`Approving USDC up to $${totalUsdc} (one signature for the whole order)…`);
+  const a = await usdc.approve(V4, need); await a.wait();
+  log("  ✓ approved", "ok");
 }
 
-// ── Originate (approve if needed + sign the loan). Shared by live flow + resume.
-async function originateQuote(payload, durSec) {
+// ── Originate ONE matched loan (allowance assumed to already cover it) ───────
+async function doOriginate(payload) {
   const q = payload.quote, sig = payload.signature, dec = payload.decomposition||{};
-  log(`  quote: rate ${q.rateBps} bps · LTV ${((dec.ltv||0)*100).toFixed(0)}% · regime ${dec.regime}`);
-  const principal = BigInt(q.principalAmount);
+  const amt = (Number(q.principalAmount)/1e6).toFixed(2);
+  log(`  → loan $${amt} · ${q.rateBps} bps · LTV ${((dec.ltv||0)*100).toFixed(0)}% · ${dec.regime||""} — sign in wallet…`);
+  const principal = BigInt(q.principalAmount);                 // safety net if approve fell short
   const usdc = new ethers.Contract(USDC, ERC20_ABI, signer);
-  const allow = await usdc.allowance(account, V4);
-  if (allow < principal) {
-    log("Approving USDC (sign in wallet)…");
-    const a = await usdc.approve(V4, principal); await a.wait(); log("  ✓ approved", "ok");
-  }
-  log("Originating loan — sign in wallet…");
+  if (await usdc.allowance(account, V4) < principal) { const a = await usdc.approve(V4, principal); await a.wait(); }
   const repo = new ethers.Contract(V4, V4_ABI, signer);
   const tup = [q.borrower,q.lender,q.principalToken,BigInt(q.principalAmount),q.collateralToken,BigInt(q.collateralAmount),BigInt(q.expiryTimestamp),BigInt(q.rateBps),q.nonce];
   const tx = await repo.originate(tup, sig);
-  log(`  tx ${tx.hash} — confirming…`);
+  log(`    tx ${tx.hash.slice(0,18)}… confirming…`);
   const rc = await tx.wait();
-  if (rc.status === 1) {
-    log(`✓ LOAN OPENED. You lent $${(Number(q.principalAmount)/1e6).toFixed(4)} at ${q.rateBps} bps.`, "ok");
-    log(`  basescan: https://basescan.org/tx/${tx.hash}`);
-    localStorage.removeItem(LS_KEY);
-    $("resume").style.display = "none";
-    return true;
-  }
-  log("Transaction reverted.", "warn");
-  return false;
+  if (rc.status === 1) { log(`    ✓ opened — basescan.org/tx/${tx.hash}`, "ok"); return true; }
+  log("    reverted.", "warn"); return false;
 }
 
-// ── On connect: if this wallet has a remembered intent that has since matched,
-//    surface a "finish it" panel (handles a match that arrived after the poll).
+// ── SWEEP: fill a lend across every matched borrower, one tx each. ───────────
+//    The server pre-creates a match per borrower the order cleared and keeps
+//    the intent open (resting) for its unfilled remainder; we originate each.
+async function sweepFill(intentId, totalAmount) {
+  let filled = 0, loans = 0, approved = false;
+  const deadline = Date.now() + 75000;          // keep watching ~75s for fresh demand
+  while (true) {
+    let data;
+    try { data = await fetch(`${API}/v1/intent/${intentId}/matches`).then(r=>r.json()); }
+    catch { if (Date.now() > deadline) break; await sleep(2500); continue; }
+    const done  = getDone(intentId);
+    const fresh = (data.matches||[]).filter(m => m.quote && !done.has(m.match_id));
+    if (fresh.length && !approved) { await ensureAllowance(totalAmount); approved = true; }
+    for (const m of fresh) {
+      try {
+        if (await doOriginate(m.quote)) { filled += Number(m.quote.quote.principalAmount)/1e6; loans++; }
+        addDone(intentId, m.match_id);
+      } catch(e) {
+        const msg = (e.shortMessage||e.message||"");
+        if (/already|exist|revert|nonce/i.test(msg)) { addDone(intentId, m.match_id); log("    (already finalized — skipping)","muted"); }
+        else { log("    error on this loan: "+msg, "warn"); break; }   // leave undone — retry next poll
+      }
+    }
+    const remaining = (data.remaining != null) ? data.remaining : null;
+    if (data.status === "matched" || (remaining != null && remaining < 0.5)) {
+      log(`✓ DONE — deployed $${filled.toFixed(2)} across ${loans} loan(s). Offer fully filled.`, "ok");
+      localStorage.removeItem(LS_KEY); localStorage.removeItem(doneKey(intentId));
+      return;
+    }
+    if (Date.now() > deadline && fresh.length === 0) {
+      log(`✓ Deployed $${filled.toFixed(2)} across ${loans} loan(s). $${(remaining??0).toFixed(2)} still resting on the book.`, "ok");
+      log("Borrow demand is thin right now — leave this page open or come back (same wallet) and it'll fill the rest as borrowers arrive.", "muted");
+      return;
+    }
+    await sleep(fresh.length ? 600 : 2500);
+  }
+}
+
+// ── On connect: resume any matched-but-unfinalized loans for the saved intent.
 async function checkPending() {
   let p; try { p = JSON.parse(localStorage.getItem(LS_KEY)||"null"); } catch { p = null; }
   if (!p || !p.intent_id || (p.wallet||"").toLowerCase() !== account.toLowerCase()) return;
   try {
-    const r = await fetch(`${API}/v1/intent/${p.intent_id}/match?wait=3`).then(x=>x.json());
-    if (!r.matched) { log("Your earlier offer is still live, no borrower yet — leave this open or re-lend.", "muted"); return; }
-    const payload = await fetchQuote(r.match_id);
-    if (!payload) { log("A match was found earlier but its quote isn't retrievable right now — try again shortly.", "warn"); return; }
-    const q = payload.quote, dec = payload.decomposition||{};
-    $("resume-detail").innerHTML = `Lend $${(Number(q.principalAmount)/1e6).toFixed(2)} at <b>${q.rateBps} bps</b> · LTV ${((dec.ltv||0)*100).toFixed(0)}% · regime ${dec.regime}.<br>Found after you left — sign to open the loan.`;
-    $("resume").dataset.payload = JSON.stringify(payload);
+    const data = await fetch(`${API}/v1/intent/${p.intent_id}/matches`).then(x=>x.json());
+    const done = getDone(p.intent_id);
+    const pending = (data.matches||[]).filter(m => m.quote && !done.has(m.match_id));
+    if (!pending.length) {
+      if (data.status === "matched" || (data.remaining!=null && data.remaining<0.5)) {
+        localStorage.removeItem(LS_KEY); localStorage.removeItem(doneKey(p.intent_id));
+      } else { log("Your earlier offer is still live, no borrower yet — leave this open or re-lend.", "muted"); }
+      return;
+    }
+    const sum = pending.reduce((s,m)=>s+Number(m.quote.quote.principalAmount)/1e6, 0);
+    $("resume-detail").innerHTML = `${pending.length} borrower(s) matched your offer — sign to finalize <b>${pending.length} loan(s)</b> (total $${sum.toFixed(2)}). Found after you left.`;
+    $("resume").dataset.intent = p.intent_id;
+    $("resume").dataset.amount = String(p.amount || data.amount || sum);
     $("resume").style.display = "block";
-    log("✓ A borrower matched your earlier offer — finish it above.", "ok");
-  } catch(e){ /* intent expired or gone — clear silently */ localStorage.removeItem(LS_KEY); }
+    log(`✓ ${pending.length} match(es) waiting — finish above.`, "ok");
+  } catch(e){ localStorage.removeItem(LS_KEY); }
 }
 
 $("resume-btn").onclick = async () => {
   $("resume-btn").disabled = true;
-  try { await originateQuote(JSON.parse($("resume").dataset.payload), 3600); }
-  catch(e){ const msg=(e.shortMessage||e.message||""); log("Error: "+msg, "warn"); if(/already|exist|revert/i.test(msg)){ log("Looks like this loan was already finalized.","muted"); localStorage.removeItem(LS_KEY); $("resume").style.display="none"; } }
+  const iid = $("resume").dataset.intent, amt = parseFloat($("resume").dataset.amount)||0;
+  $("resume").style.display = "none";
+  try { await sweepFill(iid, amt); }
+  catch(e){ log("Error: "+(e.shortMessage||e.message||e), "warn"); }
   $("resume-btn").disabled = false;
 };
-$("resume-dismiss").onclick = () => { localStorage.removeItem(LS_KEY); $("resume").style.display="none"; };
+$("resume-dismiss").onclick = () => {
+  const p = JSON.parse(localStorage.getItem(LS_KEY)||"null");
+  if (p && p.intent_id) localStorage.removeItem(doneKey(p.intent_id));
+  localStorage.removeItem(LS_KEY); $("resume").style.display="none";
+};
 
 $("connect").onclick = async () => {
   if (!window.ethereum) { log("No wallet found. Install MetaMask.", "warn"); return; }
@@ -206,29 +253,16 @@ $("lend").onclick = async () => {
     log(`Posting lender intent: $${amount} USDC @ ≥${minRate} bps for ≤${dur}s …`);
     const intent = await fetch(`${API}/v1/intent/lend`, {
       method:"POST", headers:{"content-type":"application/json"},
-      body: JSON.stringify({ wallet: account, asset:"USDC", amount, min_rate_bps:minRate, max_duration_sec:dur, max_default_prob:0.001 })
+      body: JSON.stringify({ wallet: account, asset:"USDC", amount, min_rate_bps:minRate, max_duration_sec:dur, max_default_prob:0.001, allow_partial:true })
     }).then(r=>r.json());
     if (!intent.intent_id) throw new Error("intent rejected: " + JSON.stringify(intent));
-    log(`  intent ${intent.intent_id}`);
-    // Remember it so a late match can be finalized on a return visit.
-    localStorage.setItem(LS_KEY, JSON.stringify({ intent_id: intent.intent_id, wallet: account }));
+    log(`  intent ${intent.intent_id}` + (intent.matches_count ? ` — ${intent.matches_count} borrower(s) matched instantly` : ""));
+    // Remember it so the sweep can be resumed on a return visit.
+    localStorage.setItem(LS_KEY, JSON.stringify({ intent_id: intent.intent_id, wallet: account, amount }));
 
-    let matchId = intent.matched;
-    if (!matchId) {
-      log("Waiting for a borrower match (up to 60s)…");
-      const m = await fetch(`${API}/v1/intent/${intent.intent_id}/match?wait=60`).then(r=>r.json());
-      if (!m.matched) {
-        log("No match within 60s — your offer stays LIVE on the book.", "warn");
-        log("Come back to this page (same wallet) and it'll let you finish the moment a borrower appears.", "muted");
-        lendBtn.disabled=false; return;
-      }
-      matchId = m.match_id;
-    }
-    log(`  ✓ matched: ${matchId}`, "ok");
-
-    const payload = await fetchQuote(matchId);
-    if (!payload) throw new Error("match quote not found yet — reconnect to finish");
-    await originateQuote(payload, dur);
+    if (!intent.matches_count) log("Waiting for borrowers — your offer is LIVE on the book…");
+    // SWEEP: fill across as many borrowers as your amount + the book allow.
+    await sweepFill(intent.intent_id, amount);
   } catch(e) {
     log("Error: " + (e.shortMessage || e.message || e), "warn");
   }
